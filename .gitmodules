@@ -1,0 +1,6 @@
+[submodule "libs/minimalgraphics"]
+	path = libs/minimalgraphics
+	url = git@github.com:mrf-r/minimalgraphics.git
+[submodule "libs/mbwmidi"]
+	path = libs/mbwmidi
+	url = git@github.com:mrf-r/mbwmidi.git

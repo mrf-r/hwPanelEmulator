@@ -1,0 +1,26 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/libs/minimalgraphics",
+                "${workspaceFolder}/libs/mbwmidi",
+                // "C:/msys64/usr/include",
+                "C:/msys64/mingw64/include",
+                "C:/msys64/mingw64/include/SDL2",
+                // "//wsl.localhost/Debian/home/user/seqquoia/to-be-integrated-or-deleted/sdl2_test/src"
+            ],
+            "intelliSenseMode": "windows-gcc-x64",
+            "compilerPath": "C:/msys64/usr/bin/g++.exe",
+            "cStandard": "c17",
+            "cppStandard": "c++23",
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ]
+        }
+    ],
+    "version": 4
+}
