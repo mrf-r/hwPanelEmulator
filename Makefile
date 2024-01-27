@@ -47,6 +47,7 @@ FLAGS_C += -DSDL_ASSERT_LEVEL=3
 $(TARGET_PE): .force_remake
 
 $(TARGET_PE): $(SOURCES_C)
+	mkdir -p $(dir $(TARGET_PE))
 	$(MINGW_PREFIX)gcc $(FLAGS_C) $(SOURCES_C) -o $@ $(LIBS_FLAGS)
 	./$(TARGET_PE)
 
