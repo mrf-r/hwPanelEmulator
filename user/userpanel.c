@@ -1,28 +1,5 @@
-#ifndef __PANEL_H
-#define __PANEL_H
-
-#include "wid_button.h"
-#include "wid_pot.h"
-#include "wid_encoder.h"
-#include "wid_framecounter.h"
-#include "wid_display_character.h"
-#include "wid_display_mono.h"
-#include "wid_display_multi.h"
-
-#define PANEL_NAME "LXR"
-#define PANEL_SIZE_X 480
-#define PANEL_SIZE_Y 320
-#define PANEL_SCALE 2
-#define PANEL_PROCESSRATEMUL 8
-// #define FORM_COLOR_R 125
-// #define FORM_COLOR_G 127
-// #define FORM_COLOR_B 108
-// #define FORM_COLOR_A 0
-// #define FORM_COLOR_LABEL 0xFF000000
-
-#define BUT_SIZE_X 46
-#define BUT_SIZE_Y 46 // must be same as x
-#define BUT_INTERVAL 50
+#include "panel_conf.h"
+#include "panel.h"
 
 // TODO: put all wids in one .h ?
 
@@ -100,8 +77,8 @@ static ButtonDef pot_def[] = {
 static WidgetButton buttons[BUTTONS_COUNT];
 static WidgetPot pots[POTS_COUNT];
 static WidgetEnc encoder;
-WID_DISPLAY_CHAR_DEFINE(display_ch, 16, 2) // static 1602 desplay
-WID_DISPLAY_MONO_DEFINE(display_mono, 122, 32) // static monochrome display
+// WID_DISPLAY_CHAR_DEFINE(display_ch, 16, 2) // static 1602 desplay
+// WID_DISPLAY_MONO_DEFINE(display_mono, 122, 32) // static monochrome display
 WID_DISPLAY_MULTI_DEFINE(display_multi, 96, 64) // static monochrome display
 static WidgetFrameCounter framecounter;
 
@@ -156,22 +133,23 @@ void panelConstruct(SDL_Renderer* rend)
     // wDisplayChCgram(&display_ch, 7, 0x18);
     // wDisplayChCgram(&display_ch, 8, 0x10);
     // wDisplayMonoInit(&display_mono, &display_mono_mgldisp, display_mono_framebuffer, 200, 200, 4, rend);
-    wDisplayMonoInit(&display_mono, &display_mono_mgldisp, display_mono_framebuffer, 200, 200, 3, rend);
-    mgsDisplay(&display_mono_mgldisp);
-    mgdString("Hello!", COLOR_ON);
-    // display_mono.color_pix = 0xFFFFFF;
-    widgetLed(&display_mono.v, 0xFF800000);
-    display_mono.color_pix = 0;
+
+    // wDisplayMonoInit(&display_mono, &display_mono_mgldisp, display_mono_framebuffer, 200, 200, 3, rend);
+    // mgsDisplay(&display_mono_mgldisp);
+    // mgdString("Hello!", COLOR_ON);
+    // // display_mono.color_pix = 0xFFFFFF;
+    // widgetLed(&display_mono.v, 0xFF800000);
+    // display_mono.color_pix = 0;
     // display_mono.v.need_redraw = 1;
     
 
-    // wDisplayMultiInit(&display_multi, &display_multi_mgldisp, 100, 200, 2, rend);
-    // mgsDisplay(&display_multi_mgldisp);
-    // MglColor back = { .wrd = 0xFF000000 };
-    // mgdFill(back);
-    // mgdHsvTestFill();
-    // mgdHsvTestFill2();
-    // mgdString("Hello!", mgColorHsv(0, 255, 128));
+    wDisplayMultiInit(&display_multi, &display_multi_mgldisp, 100, 200, 2, rend);
+    mgsDisplay(&display_multi_mgldisp);
+    MglColor back = { .wrd = 0xFF000000 };
+    mgdFill(back);
+    mgdHsvTestFill();
+    mgdHsvTestFill2();
+    mgdString("Hello!", mgColorHsv(0, 255, 128));
 
     wFrameCounterInit(&framecounter, 5, 5, rend);
     // return;
@@ -184,12 +162,12 @@ void panelLoop(uint32_t ms)
 
 void wButtonMidiSend(uint8_t midictrl, uint8_t value)
 {
-    if (value >= 64) {
-        if (midictrl == 0) {
-            wDisplayChSetCursor(&display_ch, 0, 0);
-        }
-        wDisplayChChar(&display_ch, midictrl + 'A');
-    }
+    // if (value >= 64) {
+    //     if (midictrl == 0) {
+    //         wDisplayChSetCursor(&display_ch, 0, 0);
+    //     }
+    //     wDisplayChChar(&display_ch, midictrl + 'A');
+    // }
     // display_ch_SetZone(midictrl, 3, 10, 10);
     // MglColor p = { .wrd = 0xFFFF0000 };
     // display_ch_PixelOut(p);
@@ -197,4 +175,5 @@ void wButtonMidiSend(uint8_t midictrl, uint8_t value)
     // (void)midictrl;
     // (void)value;
 }
-#endif // __PANEL_H
+
+

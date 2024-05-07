@@ -32,12 +32,12 @@ static void wEncRedraw(void* wid)
     WidgetEnc* v = (WidgetEnc*)wid;
     if (v->v.need_redraw) {
         v->v.need_redraw = 0;
-        uint32_t color = widget_color_released;
+        uint32_t color = panel.widget_color_released;
         if (v->pointed) {
             if (v->pointed > 1)
-                color = widget_color_pressed;
+                color = panel.widget_color_pressed;
             else
-                color = widget_color_pointed;
+                color = panel.widget_color_pointed;
         }
         drawOutline(&v->v, color);
         drawLedFill(&v->v, color);
@@ -131,7 +131,7 @@ static WidgetApi wEncApi = {
     .mouseWheel = wEncMouseWheel
 };
 
-static void wEncInit(
+__attribute__((unused)) static void wEncInit(
     WidgetEnc* v,
     const char* name,
     const char* kbd,
@@ -142,7 +142,7 @@ static void wEncInit(
     uint16_t y,
     SDL_Renderer* rend)
 {
-    widgetInit(&v->v, (void*)v, &wEncApi, x, y, widget_unit_size, widget_unit_size, widget_scale, rend);
+    widgetInit(&v->v, (void*)v, &wEncApi, x, y, panel.widget_unit_size, panel.widget_unit_size, panel.widget_scale, rend);
     v->name = name;
     v->midictrl = midictrl;
     v->kbd = kbd;

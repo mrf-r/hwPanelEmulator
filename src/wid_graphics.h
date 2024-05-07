@@ -279,12 +279,12 @@ void drawLedFill(Widget* v, const uint32_t color)
     uint16_t lye = h / 5;
     for (int y = 1; y < lye; y++) {
         for (int x = 1; x < w - 1; x++) {
-            bmp[y * w + x] = v->led | (widget_led_alpha << 24);
+            bmp[y * w + x] = v->led | (panel.widget_led_alpha << 24);
         }
     }
     for (int y = lye; y < h - 1; y++) {
         for (int x = 1; x < w - 1; x++) {
-            bmp[y * w + x] = (color & 0x00FFFFFF) | (widget_fill_alpha << 24);
+            bmp[y * w + x] = (color & 0x00FFFFFF) | (panel.widget_fill_alpha << 24);
         }
     }
 }

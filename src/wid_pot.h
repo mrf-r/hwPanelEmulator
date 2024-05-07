@@ -46,12 +46,12 @@ static void wPotRedraw(void* wid)
     WidgetPot* v = (WidgetPot*)wid;
     if (v->v.need_redraw) {
         v->v.need_redraw = 0;
-        uint32_t color = widget_color_released;
+        uint32_t color = panel.widget_color_released;
         if (v->pointed) {
             if (v->pointed > 1)
-                color = widget_color_pressed;
+                color = panel.widget_color_pressed;
             else
-                color = widget_color_pointed;
+                color = panel.widget_color_pointed;
         }
         drawOutline(&v->v, color);
         drawLedFill(&v->v, color);
@@ -67,7 +67,7 @@ static void wPotRedraw(void* wid)
             int32_t xe = x * (float)(d / 3) + d / 2;
             int32_t ys = y * (float)(d / 2 - 2) + d / 2;
             int32_t ye = y * (float)(d / 3) + d / 2;
-            drawLine(&v->v, xs, ys, xe, ye, d, widget_color_helptext);
+            drawLine(&v->v, xs, ys, xe, ye, d, panel.widget_color_helptext);
         }
         { // draw normal notch
             float value = (float)v->output * (-1 / (128.f * 128.f));
@@ -78,10 +78,10 @@ static void wPotRedraw(void* wid)
             int32_t xe = x * (float)(d / 3) + d / 2;
             int32_t ys = y * (float)(d / 2 - 2) + d / 2;
             int32_t ye = y * (float)(d / 3) + d / 2;
-            drawLine(&v->v, xs, ys, xe, ye, d, v->state == POT_STATE_LOCK_INSIDE ? widget_color_helptext : color);
+            drawLine(&v->v, xs, ys, xe, ye, d, v->state == POT_STATE_LOCK_INSIDE ? panel.widget_color_helptext : color);
         }
         drawStringCentered(&v->v, d / 2, d / 2 - 4, v->name, color);
-        drawU16Centered(&v->v, d / 2, d - 9, v->output, widget_color_helptext);
+        drawU16Centered(&v->v, d / 2, d - 9, v->output, panel.widget_color_helptext);
     }
 }
 static void wPotProcess(void* wid, uint32_t ms)
@@ -211,9 +211,10 @@ static WidgetApi wPotApi = {
     .mouseClick = wPotMouseClick,
     .mouseWheel = wPotMouseWheel
 };
-static void wPotInit(WidgetPot* v, const char* name, const uint8_t midictrl, uint16_t x, uint16_t y, SDL_Renderer* rend)
+
+__attribute__((unused)) static void wPotInit(WidgetPot* v, const char* name, const uint8_t midictrl, uint16_t x, uint16_t y, SDL_Renderer* rend)
 {
-    widgetInit(&v->v, (void*)v, &wPotApi, x, y, widget_unit_size, widget_unit_size, widget_scale, rend);
+    widgetInit(&v->v, (void*)v, &wPotApi, x, y, panel.widget_unit_size, panel.widget_unit_size, panel.widget_scale, rend);
     v->name = name;
     v->midictrl = midictrl;
     v->pointed = 0;

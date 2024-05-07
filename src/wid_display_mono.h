@@ -76,7 +76,7 @@ static void wDispMonoRedraw(void* wid)
     WidgetDisplayMono* v = (WidgetDisplayMono*)wid;
     if (v->v.need_redraw) {
         v->v.need_redraw = 0;
-        drawOutline(&v->v, widget_color_released);
+        drawOutline(&v->v, panel.widget_color_released);
 
         MglColor led = { .wrd = (v->v.led & 0x00FFFFFF) | (DISPM_ALPHA << 24) };
         MglColor pix = { .wrd = (v->color_pix & 0x00FFFFFF) | (DISPM_ALPHA << 24) };
@@ -117,7 +117,7 @@ static WidgetApi wDispMonoApi = {
     .mouseWheel = 0
 };
 
-static void wDisplayMonoInit(
+__attribute__((unused)) static void wDisplayMonoInit(
     WidgetDisplayMono* v,
     MglDisplay* disp,
     uint8_t* framebuffer,

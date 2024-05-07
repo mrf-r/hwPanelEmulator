@@ -56,9 +56,9 @@ static void wFrameCounterRedraw(void* wid)
         v->v.need_redraw = 0;
         SDL_FillRect(v->v.surface, 0, 0);
         uint32_t bcd = dec2bcd(v->frames_proc);
-        drawU16Centered(&v->v, 20, 0, bcd, widget_color_helptext);
+        drawU16Centered(&v->v, 20, 0, bcd, panel.widget_color_helptext);
         bcd = dec2bcd(v->frames_redraw);
-        drawU16Centered(&v->v, 20, 8, bcd, widget_color_helptext);
+        drawU16Centered(&v->v, 20, 8, bcd, panel.widget_color_helptext);
     }
 }
 
@@ -71,7 +71,7 @@ static WidgetApi wFrameCounterApi = {
     .mouseWheel = 0
 };
 
-static void wFrameCounterInit(
+__attribute__((unused)) static void wFrameCounterInit(
     WidgetFrameCounter* v,
     uint16_t x,
     uint16_t y,

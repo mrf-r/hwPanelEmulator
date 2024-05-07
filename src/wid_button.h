@@ -32,18 +32,18 @@ static void wButtonRedraw(void* wid)
     WidgetButton* v = (WidgetButton*)wid;
     if (v->v.need_redraw) {
         v->v.need_redraw = 0;
-        uint32_t color = widget_color_released;
+        uint32_t color = panel.widget_color_released;
         if (v->pointed) {
             if (v->pointed > 1)
-                color = widget_color_pressed;
+                color = panel.widget_color_pressed;
             else
-                color = widget_color_pointed;
+                color = panel.widget_color_pointed;
         }
         drawOutline(&v->v, color);
         drawLedFill(&v->v, color);
         uint16_t d = v->v.surface->w;
         drawStringCentered(&v->v, d / 2, d / 2 - 4, v->name, color);
-        drawString(&v->v, d / 6, d * 2 / 3, v->kbd, widget_color_helptext);
+        drawString(&v->v, d / 6, d * 2 / 3, v->kbd, panel.widget_color_helptext);
     }
 }
 static void wButtonProcess(void* wid, uint32_t ms)
@@ -118,7 +118,7 @@ static WidgetApi wButtonApi = {
     .mouseWheel = 0
 };
 
-static void wButtonInit(
+__attribute__((unused)) static void wButtonInit(
     WidgetButton* v,
     const char* name,
     const char* kbd,
@@ -128,7 +128,7 @@ static void wButtonInit(
     uint16_t y,
     SDL_Renderer* rend)
 {
-    widgetInit(&v->v, (void*)v, &wButtonApi, x, y, widget_unit_size, widget_unit_size, widget_scale, rend);
+    widgetInit(&v->v, (void*)v, &wButtonApi, x, y, panel.widget_unit_size, panel.widget_unit_size, panel.widget_scale, rend);
     v->name = name;
     v->kbd = kbd;
     v->keycode = keycode;

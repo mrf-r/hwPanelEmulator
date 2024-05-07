@@ -73,7 +73,7 @@ static void wDispChRedraw(void* wid)
     WidgetDisplayCh* v = (WidgetDisplayCh*)wid;
     if (v->v.need_redraw) {
         v->v.need_redraw = 0;
-        drawOutline(&v->v, widget_color_released);
+        drawOutline(&v->v, panel.widget_color_released);
 
         mgsDisplay(v->disp);
 
@@ -110,7 +110,7 @@ static WidgetApi wDispChApi = {
     .mouseWheel = 0
 };
 
-static void wDisplayChInit(
+__attribute__((unused)) static void wDisplayChInit(
     WidgetDisplayCh* v,
     MglDisplay* disp,
     uint16_t x,

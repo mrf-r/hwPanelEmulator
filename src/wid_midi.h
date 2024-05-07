@@ -5,7 +5,7 @@
 #include "widget.h"
 #include "portmidi.h"
 #include "libserialport.h"
-#include "midi_output.h"
+#include "midi_uart.h"
 
 /*
  version 1 - without any fancy menues, just a button to full reconnect
@@ -172,7 +172,23 @@ static void wMidiRedraw(void* wid)
     WidgetMidi* v = (WidgetMidi*)wid;
     if (v->v.need_redraw) {
         v->v.need_redraw = 0;
-        drawOutline(&v->v, widget_color_released);
+        drawOutline(&v->v, panel.widget_color_released);
+    }
+}
+
+static void wMidiProcess(void* wid)
+{
+    WidgetMidi* v = (WidgetMidi*)wid;
+    if (VMIDI_ACTIVE_PM == v->status_in) {
+        // pm
+    } else if (VMIDI_ACTIVE_SER == v->status_in) {
+        // ser
+    }
+    // output
+    if (VMIDI_ACTIVE_PM == v->status_out) {
+        // pm
+    } else if (VMIDI_ACTIVE_SER == v->status_out) {
+        // ser
     }
 }
 

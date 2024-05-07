@@ -18,10 +18,12 @@ LIBS_FLAGS := $(shell sdl2-config --cflags --libs | sed -E s/-mwindows//) # cons
 
 #######################################
 DIR_SRC := src
-DIRS_INCLUDE := $(DIR_SRC) user
+DIR_USER := user
+DIRS_INCLUDE := $(DIR_SRC) $(DIR_USER)
 
 SOURCES_C :=
-SOURCES_C += $(DIR_SRC)/wid_main.c
+SOURCES_C += $(DIR_SRC)/main.c
+SOURCES_C += $(DIR_USER)/userpanel.c
 # SOURCES_C += $(DIR_SRC)/mgldisp_sdl.c
 # SOURCES_C += $(wildcard $(DIR_SRC)/*.c)
 

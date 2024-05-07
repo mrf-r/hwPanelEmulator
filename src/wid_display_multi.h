@@ -73,7 +73,7 @@ static void wDispMultiRedraw(void* wid)
     WidgetDisplayMulti* v = (WidgetDisplayMulti*)wid;
     if (v->v.need_redraw) {
         v->v.need_redraw = 0;
-        drawOutline(&v->v, widget_color_released);
+        drawOutline(&v->v, panel.widget_color_released);
     }
 }
 
@@ -86,7 +86,7 @@ static WidgetApi wDispMultiApi = {
     .mouseWheel = 0
 };
 
-static void wDisplayMultiInit(
+__attribute__((unused)) static void wDisplayMultiInit(
     WidgetDisplayMulti* v,
     MglDisplay* disp,
     uint16_t x,
@@ -98,7 +98,7 @@ static void wDisplayMultiInit(
     SDL_memset(v, 0, sizeof(WidgetDisplayMulti));
     widgetInit(&v->v, (void*)v, &wDispMultiApi, x, y, disp->size_x + 2, disp->size_y + 2, scale, rend);
     v->disp = disp;
-    drawOutline(&v->v, widget_color_released);
+    drawOutline(&v->v, panel.widget_color_released);
     mgsDisplay(disp);
     mgsFont(&_5x7mod);
     MglColor back = { .wrd = 0xFF000000 };
