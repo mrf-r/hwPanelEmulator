@@ -1,9 +1,8 @@
 #ifndef __WID_DISPLAY_MULTI_H
 #define __WID_DISPLAY_MULTI_H
 
-#include "mgl.h"
-#include "wid_graphics.h"
 #include "widget.h"
+#include "mgl.h"
 
 // display
 #define DISP_COLOR_BACK 0x000000FF // blue inverted
@@ -26,6 +25,8 @@ typedef struct {
     uint32_t lcg;
 } WidgetDisplayMulti;
 
+// please, use this macro to create a display object
+// w, h - width and height in pixels (ex. 320, 240 - for popular tft panel)
 #define WID_DISPLAY_MULTI_DEFINE(inst_name, w, h)                                                                             \
     static WidgetDisplayMulti inst_name;                                                                                      \
     static void inst_name##_SetZone(const uint16_t wax, const uint16_t way, const uint16_t wax_size, const uint16_t way_size) \
@@ -68,42 +69,12 @@ typedef struct {
         .update = inst_name##_Update                                                                                          \
     };
 
-static void wDispMultiRedraw(void* wid)
-{
-    WidgetDisplayMulti* v = (WidgetDisplayMulti*)wid;
-    if (v->v.need_redraw) {
-        v->v.need_redraw = 0;
-        drawOutline(&v->v, panel.widget_color_released);
-    }
-}
-
-static WidgetApi wDispMultiApi = {
-    .redraw = wDispMultiRedraw,
-    .process = 0,
-    .keyboard = 0,
-    .mouseMove = 0,
-    .mouseClick = 0,
-    .mouseWheel = 0
-};
-
-__attribute__((unused)) static void wDisplayMultiInit(
+void wDisplayMultiInit(
     WidgetDisplayMulti* v,
     MglDisplay* disp,
     uint16_t x,
     uint16_t y,
     uint8_t scale,
-    SDL_Renderer* rend)
-{
-    SDL_memset(disp->context, 0, sizeof(MglDispContext));
-    SDL_memset(v, 0, sizeof(WidgetDisplayMulti));
-    widgetInit(&v->v, (void*)v, &wDispMultiApi, x, y, disp->size_x + 2, disp->size_y + 2, scale, rend);
-    v->disp = disp;
-    drawOutline(&v->v, panel.widget_color_released);
-    mgsDisplay(disp);
-    mgsFont(&_5x7mod);
-    MglColor back = { .wrd = 0xFF000000 };
-    mgsBackColor(back);
-    mgsAlign(MGL_ALIGN_LEFT);
-}
+    SDL_Renderer* rend);
 
 #endif // __WID_DISPLAY_MULTI_H

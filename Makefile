@@ -22,10 +22,11 @@ DIR_USER := user
 DIRS_INCLUDE := $(DIR_SRC) $(DIR_USER)
 
 SOURCES_C :=
-SOURCES_C += $(DIR_SRC)/main.c
+SOURCES_C += $(wildcard $(DIR_SRC)/*.c)
+# SOURCES_C += $(DIR_SRC)/main.c
+# SOURCES_C += $(wildcard $(DIR_USER)/*.c)
+# SOURCES_C += $(DIR_USER)/userpanel_empty.c
 SOURCES_C += $(DIR_USER)/userpanel.c
-# SOURCES_C += $(DIR_SRC)/mgldisp_sdl.c
-# SOURCES_C += $(wildcard $(DIR_SRC)/*.c)
 
 #######################################
 # user libraries
@@ -34,6 +35,10 @@ DIRS_INCLUDE += $(DIR_MGL)
 SOURCES_C += $(DIR_MGL)/mgl.c
 SOURCES_C += $(DIR_MGL)/5monotxt.c
 SOURCES_C += $(DIR_MGL)/5x7mod.c
+
+DIR_MIDI := libs/mbwmidi
+DIRS_INCLUDE += $(DIR_MIDI)
+SOURCES_C += $(wildcard $(DIR_MIDI)/*.c)
 
 #######################################
 FLAGS_C := 

@@ -11,6 +11,7 @@ void panelConstruct(SDL_Renderer* rend);
 void panelLoop(uint32_t ms);
 // ---
 
+uint32_t lcg;
 Panel panel;
 
 #define DEBUG_PRINTF(...)

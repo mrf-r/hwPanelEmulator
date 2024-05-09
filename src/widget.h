@@ -46,10 +46,10 @@ typedef struct {
 } Panel;
 
 extern Panel panel;
+extern uint32_t lcg;
 
 static inline uint32_t widgetRandom()
 {
-    static uint32_t lcg = 0;
     lcg = lcg * 1103515245 + 12345;
     return lcg;
 }

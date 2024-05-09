@@ -1,5 +1,6 @@
 #include "panel_conf.h"
 #include "panel.h"
+#include "mbwmidi.h"
 
 // TODO: put all wids in one .h ?
 
@@ -162,6 +163,12 @@ void panelLoop(uint32_t ms)
 
 void wButtonMidiSend(uint8_t midictrl, uint8_t value)
 {
+    MidiMessageT m;
+    m.cn = MIDI_CN_LOCALPANEL;
+    m.cin = m.miditype = value ? MIDI_CIN_NOTEON : MIDI_CIN_NOTEOFF;
+    m.byte2 = midictrl;
+    m.byte3 = value;
+    midiNonSysexWrite(m);
     // if (value >= 64) {
     //     if (midictrl == 0) {
     //         wDisplayChSetCursor(&display_ch, 0, 0);
@@ -177,3 +184,22 @@ void wButtonMidiSend(uint8_t midictrl, uint8_t value)
 }
 
 
+
+void wPotMidiSend(uint8_t midictrl, uint16_t value)
+{
+    (void)midictrl;
+    (void)value;
+}
+
+void wEncMidiSend(uint8_t midictrl, int8_t value)
+{
+    MidiMessageT m;
+    m.cn = MIDI_CN_LOCALPANEL;
+    m.cin = m.miditype = MIDI_CIN_CONTROLCHANGE;
+    m.byte2 = midictrl;
+    m.byte3 = value;
+    midiNonSysexWrite(m);
+
+    (void)midictrl;
+    (void)value;
+}

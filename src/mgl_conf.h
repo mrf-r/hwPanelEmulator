@@ -1,14 +1,8 @@
 #ifndef __MGL_CONF_H
 #define __MGL_CONF_H
 
-#define DEBUG
-
-#ifdef DEBUG
-#include <assert.h>
-#define MGL_ASSERT assert
-#else
-#define MGL_ASSERT(...)
-#endif
+#include <SDL.h>
+#define MGL_ASSERT SDL_assert
 
 // #include "config.h"
 // #define MGL_SINGLEDISPLAY
