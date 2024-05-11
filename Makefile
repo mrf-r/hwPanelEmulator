@@ -14,8 +14,10 @@ LIBS_FLAGS += $(shell sdl2-config --libs) # separated with cflags for -mconsole
 LIBS_FLAGS += $(shell pkg-config $(LIBS) --cflags --libs)
 
 #######################################
-DIR_SRC := src
+ifeq (,$(DIR_USER))
 DIR_USER := user
+endif
+DIR_SRC := src
 DIRS_INCLUDE := $(DIR_SRC) $(DIR_USER)
 
 SOURCES_C :=
@@ -51,6 +53,7 @@ FLAGS_C += -DSDL_ASSERT_LEVEL=3
 $(TARGET_PE): .force_remake
 
 $(TARGET_PE): $(SOURCES_C)
+	@echo "userdir: $(DIR_USER)"
 	mkdir -p $(dir $(TARGET_PE))
 	gcc $(FLAGS_C) $(SOURCES_C) -o $@ $(LIBS_FLAGS)
 	./$(TARGET_PE)
