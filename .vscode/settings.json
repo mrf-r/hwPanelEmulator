@@ -2,8 +2,6 @@
     "C_Cpp.clang_format_fallbackStyle": "WebKit",
     "files.associations": {
         "*.h": "cpp",
-        "compare": "cpp",
-        "cstdint": "cpp"
     },
     "C_Cpp.default.compilerPath": "c:\\msys64\\usr\\bin\\c++.exe"
 }

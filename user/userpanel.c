@@ -142,64 +142,69 @@ void panelConstruct(SDL_Renderer* rend)
     // widgetLed(&display_mono.v, 0xFF800000);
     // display_mono.color_pix = 0;
     // display_mono.v.need_redraw = 1;
-    
 
     wDisplayMultiInit(&display_multi, &display_multi_mgldisp, 100, 200, 2, rend);
     mgsDisplay(&display_multi_mgldisp);
     MglColor back = { .wrd = 0xFF000000 };
     mgdFill(back);
-    mgdHsvTestFill();
-    mgdHsvTestFill2();
+    // mgdHsvTestFill();
+    // mgdHsvTestFill2();
     mgdString("Hello!", mgColorHsv(0, 255, 128));
 
     wFrameCounterInit(&framecounter, 5, 5, rend);
     // return;
+
+    potThresholdSet(&pots[0].potdata, 2);
+    potThresholdSet(&pots[1].potdata, 2);
+    potThresholdSet(&pots[2].potdata, 2);
+    potThresholdSet(&pots[3].potdata, 2);
 }
 
 void panelLoop(uint32_t ms)
 {
-    //
-}
+    static uint8_t line = 0;
+    MidiTsMessageT mt;
+    if (MIDI_RET_OK == midiRead(&mt)) {
+        mgsDisplay(&display_multi_mgldisp);
+        mgsCursorAbs(0, line * 8);
+        line++;
+        if (line == 8)
+            line = 0;
+        mgdHex32(mt.mes.full_word, mgColorHsv(0, 255, 128));
+        // mgdChar('-', mgColorHsv(0, 255, 128));
+        mgdHex32(mt.timestamp, mgColorHsv(0, 255, 128));
 
-void wButtonMidiSend(uint8_t midictrl, uint8_t value)
-{
-    MidiMessageT m;
-    m.cn = MIDI_CN_LOCALPANEL;
-    m.cin = m.miditype = value ? MIDI_CIN_NOTEON : MIDI_CIN_NOTEOFF;
-    m.byte2 = midictrl;
-    m.byte3 = value;
-    midiNonSysexWrite(m);
-    // if (value >= 64) {
-    //     if (midictrl == 0) {
-    //         wDisplayChSetCursor(&display_ch, 0, 0);
-    //     }
-    //     wDisplayChChar(&display_ch, midictrl + 'A');
-    // }
-    // display_ch_SetZone(midictrl, 3, 10, 10);
-    // MglColor p = { .wrd = 0xFFFF0000 };
-    // display_ch_PixelOut(p);
-    // display_ch.v.need_redraw = 1;
-    // (void)midictrl;
-    // (void)value;
-}
-
-
-
-void wPotMidiSend(uint8_t midictrl, uint16_t value)
-{
-    (void)midictrl;
-    (void)value;
-}
-
-void wEncMidiSend(uint8_t midictrl, int8_t value)
-{
-    MidiMessageT m;
-    m.cn = MIDI_CN_LOCALPANEL;
-    m.cin = m.miditype = MIDI_CIN_CONTROLCHANGE;
-    m.byte2 = midictrl;
-    m.byte3 = value;
-    midiNonSysexWrite(m);
-
-    (void)midictrl;
-    (void)value;
+        // lock test
+        if (mt.mes.cn == MIDI_CN_LOCALPANEL) {
+            if ((MIDI_CIN_NOTEON == mt.mes.cin)
+                && (mt.mes.byte2 == 0)) {
+                //
+                potLock(&pots[0].potdata, 1, 1);
+            }
+            if ((MIDI_CIN_NOTEON == mt.mes.cin)
+                && (mt.mes.byte2 == 1)) {
+                //
+                potLock(&pots[1].potdata, 128 * 16, 1);
+            }
+            if ((MIDI_CIN_NOTEON == mt.mes.cin)
+                && (mt.mes.byte2 == 2)) {
+                //
+                potLock(&pots[2].potdata, 128 * 64, 1);
+            }
+            if ((MIDI_CIN_NOTEON == mt.mes.cin)
+                && (mt.mes.byte2 == 3)) {
+                //
+                potLock(&pots[3].potdata, 128 * 128 - 1, 1);
+            }
+        }
+    }
+    if (MIDI_RET_OK == midiSysexRead(&mt.mes)) {
+        mgsDisplay(&display_multi_mgldisp);
+        mgsCursorAbs(0, line * 8);
+        line++;
+        if (line == 8)
+            line = 0;
+        mgdHex32(mt.mes.full_word, mgColorHsv(0, 255, 128));
+        mgdString("-syx-", mgColorHsv(0, 255, 128));
+    }
 }

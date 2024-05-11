@@ -1,7 +1,9 @@
-# hwPanelEmulator
-SDL2 hardware control panel emulator
+# SDL2 hardware emulator
+for experimenting with different layouts, MIDI sequencing and audio synthesis.
 
-current state is far from perfect, but works
+# dependencies:
+- make gcc pkgconf
+- SDL2 portmidi libserialport portaudio
 
 # TODO:
 - primary:

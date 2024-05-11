@@ -1,15 +1,21 @@
 
 #include "wid_button.h"
 #include "wid_graphics.h"
+#include "mbwmidi.h"
 
-// __attribute__((weak)) void wButtonMidiSend(uint8_t midictrl, uint8_t value)
-// {
-//     (void)midictrl;
-//     (void)value;
-// }
-void wButtonMidiSend(uint8_t midictrl, uint8_t value);
-
-//////////////////
+__attribute__((weak)) void wButtonMidiSend(uint8_t midictrl, uint8_t value)
+{
+    SDL_assert(midictrl < 128);
+    SDL_assert(value < 128);
+    MidiMessageT m;
+    m.cn = MIDI_CN_LOCALPANEL;
+    m.cin = m.miditype = value ? MIDI_CIN_NOTEON : MIDI_CIN_NOTEOFF;
+    m.byte2 = midictrl;
+    m.byte3 = value;
+    midiNonSysexWrite(m);
+    // (void)midictrl;
+    // (void)value;
+}
 
 #define BUT_SRC_POINTED 0x01
 #define BUT_SRC_MOUSE 0x02
@@ -47,7 +53,7 @@ static void wButtonProcess(void* wid, uint32_t ms)
         wButtonMidiSend(v->midictrl, 0);
     } else if ((0 == (v->pointed & BUT_SRC_INT)) && (v->pointed & point_mask)) {
         v->pointed |= BUT_SRC_INT;
-        wButtonMidiSend(v->midictrl, 0x7F);
+        wButtonMidiSend(v->midictrl, 1);
     }
 }
 static void wButtonKeyboard(void* wid, SDL_Event* e)

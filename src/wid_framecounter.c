@@ -21,6 +21,7 @@ static void wFrameCounterProcess(void* wid, uint32_t ms)
 {
     WidgetFrameCounter* v = (WidgetFrameCounter*)wid;
     uint32_t delta = ms - v->prev_frame;
+    // TODO: overflow???
     if (delta > FRAMECOUNTER_PERIOD_MS) {
         v->prev_frame += FRAMECOUNTER_PERIOD_MS;
         v->frames_proc = v->counter_proc;
@@ -32,6 +33,9 @@ static void wFrameCounterProcess(void* wid, uint32_t ms)
         if (v->counter_proc < 9999)
             v->counter_proc++;
     }
+    // TODO:::
+    // uint64_t perf = SDL_GetPerformanceFrequency();
+    // perf = SDL_GetPerformanceCounter();
 }
 
 static void wFrameCounterRedraw(void* wid)

@@ -1,12 +1,20 @@
 #include "wid_encoder.h"
 #include "wid_graphics.h"
+#include "mbwmidi.h"
 
-// __attribute__((weak)) void wEncMidiSend(uint8_t midictrl, int8_t value)
-// {
-//     (void)midictrl;
-//     (void)value;
-// }
-void wEncMidiSend(uint8_t midictrl, int8_t value);
+__attribute__((weak)) void wEncMidiSend(uint8_t midictrl, uint8_t value)
+{
+    SDL_assert(midictrl < 128);
+    SDL_assert(value < 128);
+    MidiMessageT m;
+    m.cn = MIDI_CN_LOCALPANEL;
+    m.cin = m.miditype = MIDI_CIN_POLYKEYPRESS;
+    m.byte2 = midictrl;
+    m.byte3 = value;
+    midiNonSysexWrite(m);
+    // (void)midictrl;
+    // (void)value;
+}
 
 #define ENCODER_NOTCHES 7
 #define ENCODER_SHIFT 16
@@ -52,7 +60,7 @@ static void wEncProcess(void* wid, uint32_t ms)
             ds = 63;
         else if (ds < -64)
             ds = -64;
-        wEncMidiSend(v->midictrl, ds);
+        wEncMidiSend(v->midictrl, ds + 64);
         v->value_send += ds * ENCODER_SHIFT;
         v->v.need_redraw = 1;
     }

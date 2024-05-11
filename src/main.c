@@ -2,10 +2,6 @@
 #include "widget.h"
 #include "panel_conf.h"
 
-#ifndef PANEL_PROCESSRATEMUL
-#define PANEL_PROCESSRATEMUL 1
-#endif
-
 // --- to be implemented by user
 void panelConstruct(SDL_Renderer* rend);
 void panelLoop(uint32_t ms);
@@ -14,8 +10,8 @@ void panelLoop(uint32_t ms);
 uint32_t lcg;
 Panel panel;
 
-#define DEBUG_PRINTF(...)
-// #define DEBUG_PRINTF printf
+// #define DEBUG_PRINTF(...)
+#define DEBUG_PRINTF printf
 
 static void panelInit()
 {
@@ -143,7 +139,7 @@ int main(int argc, char* argv[])
     int ret = 0;
     ret = SDL_Init(SDL_INIT_TIMER | SDL_INIT_AUDIO | SDL_INIT_VIDEO | SDL_INIT_EVENTS);
 
-    // display info
+    // // display info
     // for (int i = 0; i < SDL_GetNumVideoDisplays(); i++) {
     //     SDL_DisplayMode m;
     //     SDL_GetDesktopDisplayMode(i, &m);
@@ -182,10 +178,9 @@ int main(int argc, char* argv[])
 
             // process widgets
             uint32_t ms;
-            for (int i = 0; i < PANEL_PROCESSRATEMUL; i++) {
-                ms = SDL_GetTicks(); // TODO: dumb, but for now it is probably ok
-                widgetProcessAll(ms);
-            }
+            ms = SDL_GetTicks();
+            widgetProcessAll(ms);
+            
             // process panel
             panelLoop(ms); // TODO: should we also multiply panel processing?
 

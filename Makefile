@@ -1,20 +1,17 @@
 TARGET_PE := build/test
-ifeq ($(OS), Windows_NT)
-	MINGW_PREFIX := /mingw64/bin/
-else
-	MINGW_PREFIX :=
-endif
-#######################################
-# system libraries
-LIBS := 
-LIBS += sdl2
-# LIBS += portmidi
-# LIBS += libserialport
-# LIBS += portaudio-2.0
 
-# LIBS_FLAGS := $(shell sdl2-config --cflags --libs)
-LIBS_FLAGS := $(shell sdl2-config --cflags --libs | sed -E s/-mwindows//) # console output
-# LIBS_FLAGS := $(shell pkg-config $(LIBS) --cflags --libs)
+#######################################
+# additional libraries besides sdl2
+LIBS := 
+LIBS += portmidi
+LIBS += libserialport
+LIBS += portaudio-2.0
+
+LIBS_FLAGS := 
+LIBS_FLAGS += $(shell sdl2-config --cflags)
+LIBS_FLAGS += $(shell sdl2-config --libs) # separated with cflags for -mconsole
+# LIBS_FLAGS += -mconsole # part of --libs, uncomment it if printf console is needed
+LIBS_FLAGS += $(shell pkg-config $(LIBS) --cflags --libs)
 
 #######################################
 DIR_SRC := src
@@ -55,7 +52,7 @@ $(TARGET_PE): .force_remake
 
 $(TARGET_PE): $(SOURCES_C)
 	mkdir -p $(dir $(TARGET_PE))
-	$(MINGW_PREFIX)gcc $(FLAGS_C) $(SOURCES_C) -o $@ $(LIBS_FLAGS)
+	gcc $(FLAGS_C) $(SOURCES_C) -o $@ $(LIBS_FLAGS)
 	./$(TARGET_PE)
 
 .force_remake:
