@@ -47,6 +47,7 @@ FLAGS_C += -O3
 FLAGS_C += -g3
 FLAGS_C += -Wall -Wpedantic
 FLAGS_C += -DSDL_ASSERT_LEVEL=3
+FLAGS_C += -DDEBUG=1
 # FLAGS_C += -Xlinker -Map=$(TARGET_PE).map
 
 #######################################

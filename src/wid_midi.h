@@ -2,6 +2,7 @@
 #define __WID_MIDI_H
 
 #include "widget.h"
+#include "mbwmidi.h"
 
 /*
  version 1 - without any fancy menues, just a button to full reconnect
@@ -42,8 +43,12 @@ typedef struct {
     uint16_t counter_out_prev;
     uint8_t status_in;
     uint8_t status_out;
-    uint8_t pm_sysex[4];
-    uint8_t pm_sysex_len;
+    uint8_t pm_sysex_in[4];
+    uint8_t pm_sysex_in_len;
+    uint8_t pm_sysex_out[4];
+    uint8_t pm_sysex_out_len;
+    uint32_t proc_clk_prev;
+    uint32_t proc_prev_remaining_us;
 } WidgetMidi;
 
 void wMidiInit(
@@ -51,5 +56,7 @@ void wMidiInit(
     uint16_t x,
     uint16_t y,
     SDL_Renderer* rend);
+
+extern MidiOutPortContextT midi_out_port;
 
 #endif // __WID_MIDI_H

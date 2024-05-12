@@ -9,6 +9,8 @@
 #define WMIDI_PRINTF printf
 // #define WMIDI_PRINTF(...)
 
+MidiOutPortContextT midi_out_port;
+
 void wMidiStart(WidgetMidi* v)
 {
     // init midi and try to find needed ports
@@ -122,10 +124,21 @@ void wMidiStart(WidgetMidi* v)
     sp_free_config(config);
     sp_free_port_list(port_list);
 
+    if (VMIDI_ACTIVE_SER == v->status_in) {
+        WMIDI_PRINTF("\n pm in active");
+        // TODO init uart for serial
+        // midiInUartInit
+    }
+    if (VMIDI_ACTIVE_SER == v->status_out) {
+        WMIDI_PRINTF("\n pm out active");
+        // TODO init uart for serial
+        // midiOutUartInit
+    }
+
     WMIDI_PRINTF("\n wMidiStart");
 }
 
-void wMidiStop(WidgetMidi* v)
+static void wMidiStop(WidgetMidi* v)
 {
     if (VMIDI_ACTIVE_PM == v->status_in) {
         Pm_Close((PortMidiStream*)v->inst_input);
@@ -189,40 +202,40 @@ static inline void pmEventSysexReceive(WidgetMidi* v, PmEvent ev)
             // termination
             MidiMessageT m;
             m.cn = MIDI_CN_USB_DEVICE;
-            switch (v->pm_sysex_len) {
+            switch (v->pm_sysex_in_len) {
             case 0:
                 m.cin = MIDI_CIN_SYSEXEND1;
                 m.byte1 = b;
-                m.byte2 = v->pm_sysex[1];
-                m.byte3 = v->pm_sysex[2];
+                m.byte2 = v->pm_sysex_in[1];
+                m.byte3 = v->pm_sysex_in[2];
                 break;
             case 1:
                 m.cin = MIDI_CIN_SYSEXEND2;
-                m.byte1 = v->pm_sysex[0];
+                m.byte1 = v->pm_sysex_in[0];
                 m.byte2 = b;
-                m.byte3 = v->pm_sysex[2];
+                m.byte3 = v->pm_sysex_in[2];
                 break;
             case 2:
                 m.cin = MIDI_CIN_SYSEXEND3;
-                m.byte1 = v->pm_sysex[0];
-                m.byte2 = v->pm_sysex[1];
+                m.byte1 = v->pm_sysex_in[0];
+                m.byte2 = v->pm_sysex_in[1];
                 m.byte3 = b;
                 break;
             }
             midiTsWrite(m, 0);
-            v->pm_sysex_len = 0;
+            v->pm_sysex_in_len = 0;
         } else {
-            v->pm_sysex[v->pm_sysex_len] = b;
-            v->pm_sysex_len++;
-            if (v->pm_sysex_len == 3) {
+            v->pm_sysex_in[v->pm_sysex_in_len] = b;
+            v->pm_sysex_in_len++;
+            if (v->pm_sysex_in_len == 3) {
                 MidiMessageT m;
                 m.cn = MIDI_CN_USB_DEVICE;
                 m.cin = MIDI_CIN_SYSEX3BYTES;
-                m.byte1 = v->pm_sysex[0];
-                m.byte2 = v->pm_sysex[1];
-                m.byte3 = v->pm_sysex[2];
+                m.byte1 = v->pm_sysex_in[0];
+                m.byte2 = v->pm_sysex_in[1];
+                m.byte3 = v->pm_sysex_in[2];
                 midiTsWrite(m, 0);
-                v->pm_sysex_len = 0;
+                v->pm_sysex_in_len = 0;
             }
         }
     }
@@ -261,24 +274,119 @@ static inline void pmEventReceive(WidgetMidi* v, PmEvent ev)
     }
 }
 
+static inline void pmSyxOutCompose(WidgetMidi* v, uint8_t byte)
+{
+    v->pm_sysex_out[v->pm_sysex_out_len] = byte;
+    v->pm_sysex_out_len++;
+    if (4 == v->pm_sysex_out_len) {
+        v->pm_sysex_out_len = 0;
+        PmEvent ev = {
+            .timestamp = 0,
+            .message = v->pm_sysex_out[0]
+                | (v->pm_sysex_out[1] << 8)
+                | (v->pm_sysex_out[2] << 16)
+                | (v->pm_sysex_out[3] << 24)
+        };
+        Pm_Write((PortMidiStream*)v->inst_output, &ev, 1);
+        WMIDI_PRINTF("\n Pm_Write: %08X", ev.message);
+    }
+}
+
 static void wMidiProcess(void* wid, uint32_t clock)
 {
+
     WidgetMidi* v = (WidgetMidi*)wid;
     if (VMIDI_ACTIVE_PM == v->status_in) {
-        // PmError err;
         PmEvent rx;
+        // read all received messages
         while (1 == Pm_Read((PortMidiStream*)v->inst_input, &rx, 1)) {
             pmEventReceive(v, rx);
             v->counter_in++;
         }
     } else if (VMIDI_ACTIVE_SER == v->status_in) {
         // ser
+        // midiInUartTap()
     }
     // output
+
+    // limit the output flow
+    // 1 - calculate time
+    const uint32_t time_delta_clk = clock - v->proc_clk_prev;
+    v->proc_clk_prev = clock;
+    const uint32_t time_delta_us = time_delta_clk * 1000000 / MIDI_CLOCK_RATE + v->proc_prev_remaining_us;
+    const uint32_t bytes_per_second = v->baud / 10;
+    // const uint32_t messages_per_second = bytes_per_second * 5 / 2; // ~2.5 bytes per message
+    const uint32_t byte_time_us = 1000000 / bytes_per_second;
+    const uint32_t bytes_in_this_timeslot = time_delta_us / byte_time_us;
+    v->proc_prev_remaining_us = time_delta_us - bytes_in_this_timeslot * byte_time_us;
+
     if (VMIDI_ACTIVE_PM == v->status_out) {
-        //
+        MidiMessageT m;
+        uint32_t bytes_limit = bytes_in_this_timeslot;
+        while ((bytes_limit) && (MIDI_RET_OK == midiPortReadNext(&midi_out_port, &m))) {
+            v->counter_out++;
+            switch (m.cin) {
+            default:
+                break;
+            case MIDI_CIN_SYSEX3BYTES:
+            case MIDI_CIN_SYSEXEND3:
+                pmSyxOutCompose(v, m.byte1);
+                if (bytes_limit)
+                    bytes_limit--;
+                pmSyxOutCompose(v, m.byte2);
+                if (bytes_limit)
+                    bytes_limit--;
+                pmSyxOutCompose(v, m.byte3);
+                if (bytes_limit)
+                    bytes_limit--;
+                break;
+            case MIDI_CIN_SYSEXEND2:
+                pmSyxOutCompose(v, m.byte1);
+                if (bytes_limit)
+                    bytes_limit--;
+                pmSyxOutCompose(v, m.byte2);
+                if (bytes_limit)
+                    bytes_limit--;
+                break;
+            case MIDI_CIN_SYSEXEND1:
+                pmSyxOutCompose(v, m.byte1);
+                if (bytes_limit)
+                    bytes_limit--;
+                break;
+            case MIDI_CIN_3BYTESYSTEMCOMMON:
+            case MIDI_CIN_NOTEOFF:
+            case MIDI_CIN_NOTEON:
+            case MIDI_CIN_POLYKEYPRESS:
+            case MIDI_CIN_CONTROLCHANGE:
+            case MIDI_CIN_PITCHBEND:
+                if (bytes_limit)
+                    bytes_limit--;
+                // fall through
+            case MIDI_CIN_2BYTESYSTEMCOMMON:
+            case MIDI_CIN_PROGRAMCHANGE:
+            case MIDI_CIN_CHANNELPRESSURE:
+                if (bytes_limit)
+                    bytes_limit--;
+                // fall through
+            case MIDI_CIN_SINGLEBYTE:
+                if (bytes_limit)
+                    bytes_limit--;
+                {
+                    // const PmMessage msg = m.full_word >> 8;
+                    // Pm_WriteShort((PortMidiStream*)v->inst_output, 0, msg);
+                    PmEvent ev = {
+                        .timestamp = 0,
+                        .message = m.full_word >> 8
+                    };
+                    Pm_Write((PortMidiStream*)v->inst_output, &ev, 1);
+                    WMIDI_PRINTF("\n Pm_Write: %08X", ev.message);
+                }
+                break;
+            }
+        } // while port messages are present
     } else if (VMIDI_ACTIVE_SER == v->status_out) {
         // ser
+        // midiOutUartTap()
     }
     if ((v->counter_in_prev != v->counter_in) || (v->counter_out_prev != v->counter_out)) {
         v->counter_in_prev = v->counter_in;
@@ -315,7 +423,7 @@ static void wMidiMouseClick(void* wid, SDL_Point* pos, Drag* d)
 static void wMidiTerminate(void* wid)
 {
     WidgetMidi* v = (WidgetMidi*)wid;
-    WMIDI_PRINTF("\n midi end");
+    WMIDI_PRINTF("\n wMidiTerminate");
     wMidiStop(v);
 }
 
@@ -340,9 +448,15 @@ void wMidiInit(
     v->inst_input = v->inst_output = 0;
     v->counter_in = v->counter_in_prev = 0;
     v->counter_out = v->counter_out_prev = 0;
+    v->pm_sysex_in_len = v->pm_sysex_out_len = 0;
+    if (v->baud < 10)
+        v->baud = 10;
 
     WMIDI_PRINTF("\n midi start");
     wMidiStart(v);
+
+    midiInit();
+    midiPortInit(&midi_out_port);
 
     // we need to read needed midi devices from configuration file
     // if there are no file or midi devices, then create file or append these parameters to existing
@@ -377,7 +491,6 @@ TODO:
     - tap
 */
 
-// MidiOutPortContextT orca_uart_port;
 // static MidiOutUartContextT orca_uart_cx;
 
 // static void ouSendByte(uint8_t b)

@@ -111,6 +111,12 @@ void panelLoop(uint32_t clock)
         mgdHex32(mt.mes.full_word, COLOR_ON);
         // mgdChar('-', mgColorHsv(0, 255, 128));
         mgdHex32(mt.timestamp, COLOR_ON);
+
+        // play keys
+        if ((MIDI_CN_LOCALPANEL == mt.mes.cn) && ((MIDI_CIN_NOTEOFF == mt.mes.cin) || (MIDI_CIN_NOTEON == mt.mes.cin))) {
+            mt.mes.byte2 += 0x20; // shift up slightly
+            midiPortWrite(&midi_out_port, mt.mes);
+        }
     }
     while (MIDI_RET_OK == midiSysexRead(&mt.mes)) {
         mgsDisplay(&display_mono_mgldisp);
