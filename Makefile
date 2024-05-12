@@ -10,7 +10,7 @@ LIBS += portaudio-2.0
 LIBS_FLAGS := 
 LIBS_FLAGS += $(shell sdl2-config --cflags)
 LIBS_FLAGS += $(shell sdl2-config --libs) # separated with cflags for -mconsole
-# LIBS_FLAGS += -mconsole # part of --libs, uncomment it if printf console is needed
+LIBS_FLAGS += -mconsole # part of --libs, uncomment it if printf console is needed
 LIBS_FLAGS += $(shell pkg-config $(LIBS) --cflags --libs)
 
 #######################################

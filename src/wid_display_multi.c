@@ -1,15 +1,6 @@
 #include "wid_display_multi.h"
 #include "wid_graphics.h"
 
-// display
-#define DISP_COLOR_BACK 0x000000FF // blue inverted
-#define DISP_COLOR_PIXEL 0xFFFFFF
-// #define DISP_COLOR_BACK 0x0040C000 // green standart
-// #define DISP_COLOR_PIXEL 0x0
-#define DISP_ALPHA 0xA0
-#define DISP_GAP 2
-extern const MglFont _5x7mod;
-
 static void wDispMultiRedraw(void* wid)
 {
     WidgetDisplayMulti* v = (WidgetDisplayMulti*)wid;
@@ -25,7 +16,8 @@ static WidgetApi wDispMultiApi = {
     .keyboard = 0,
     .mouseMove = 0,
     .mouseClick = 0,
-    .mouseWheel = 0
+    .mouseWheel = 0,
+    .terminate = 0
 };
 
 void wDisplayMultiInit(

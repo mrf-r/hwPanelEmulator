@@ -5,8 +5,12 @@
 // display
 // #define DISPCH_COLOR_BACK 0x000000FF // blue inverted
 // #define DISPCH_COLOR_PIXEL 0xFFFFFF
+#ifndef DISPCH_COLOR_BACK
 #define DISPCH_COLOR_BACK 0x0040C000 // green standart
+#endif
+#ifndef DISPM_COLOR_PIXEL
 #define DISPCH_COLOR_PIXEL 0x0
+#endif
 #define DISPCH_ALPHA 0xA0
 extern const MglFont _5x7mod;
 
@@ -49,7 +53,8 @@ static WidgetApi wDispChApi = {
     .keyboard = 0,
     .mouseMove = 0,
     .mouseClick = 0,
-    .mouseWheel = 0
+    .mouseWheel = 0,
+    .terminate = 0
 };
 
 void wDisplayChInit(
@@ -66,21 +71,7 @@ void wDisplayChInit(
     v->disp = disp;
     v->color_pix = DISPCH_COLOR_PIXEL;
     widgetLed(&v->v, DISPCH_COLOR_BACK);
-
-    // mgsDisplay(disp);
-    // mgsFont(&_5x7mod);
-    // MglColor led = { .wrd = v->v.led };
-    // MglColor pix = { .wrd = v->color_pix };
-    // MglColor led2 = { .wrd = v->v.led | 0xFF };
-    // mgsBackColor(led2);
-    // MglColor tc = { .wrd = 0xFFFF0000 };
-    // mgdFill(led);
-    // mgsCursorAbs(0 * DISPCH_CHAR_W + DISPCH_CHAR_W / 2, 0 * DISPCH_CHAR_H + DISPCH_CHAR_W / 2);
-    // mgdChar('I', pix);
 }
-
-// ========================================================================================
-// midi api char
 
 void wDisplayChSetCursor(WidgetDisplayCh* v, uint8_t x, uint8_t y)
 {

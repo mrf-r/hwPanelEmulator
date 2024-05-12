@@ -5,7 +5,7 @@
 // TODO: put all wids in one .h ?
 
 void panelConstruct(SDL_Renderer* rend);
-void panelLoop(uint32_t ms);
+void panelLoop(uint32_t clock);
 
 typedef struct {
     const char* name;
@@ -38,26 +38,32 @@ static WidgetButton buttons[BUTTONS_COUNT];
 static WidgetEnc encoder;
 WID_DISPLAY_MONO_DEFINE(display_mono, 122, 32) // static monochrome display
 static WidgetFrameCounter framecounter;
+static WidgetMidi wmidi_io;
 
 #define LCD_SCALE 3
 #define LCD_DEF_WTD ((122 + 6) * LCD_SCALE)
 #define LCD_DEF_HTH ((32 + 6) * LCD_SCALE)
 
-
+extern const MglFont _5monotxt;
 void panelConstruct(SDL_Renderer* rend)
 {
-    wFrameCounterInit(&framecounter, 5, 5, rend);
+    wFrameCounterInit(&framecounter, 20, 0, rend);
+    wmidi_io.name_in[0] = wmidi_io.name_out[0] = 'M';
+    wmidi_io.name_in[1] = wmidi_io.name_out[1] = 'P';
+    wmidi_io.name_in[2] = wmidi_io.name_out[2] = 'K';
+    wMidiInit(&wmidi_io, 70, 0, rend);
 
-    uint16_t xinit = PAN_OFFSET;
+    uint16_t xinit = PAN_BORDER;
 
-    uint16_t y = PAN_OFFSET;
+    uint16_t y = PAN_BORDER;
     uint16_t x = xinit + (PAN_ELEMENTS_WIDTH - LCD_DEF_WTD) / 2;
 
     wDisplayMonoInit(&display_mono, &display_mono_mgldisp, display_mono_framebuffer, x, y, LCD_SCALE, rend);
     mgsDisplay(&display_mono_mgldisp);
+    mgsFont(&_5monotxt);
     mgdString("Hello!", COLOR_ON);
 
-    y += LCD_DEF_HTH + PAN_BUT_INTERVAL * PANEL_SCALE;
+    y += LCD_DEF_HTH + PANEL_UNIT_GAP * PANEL_SCALE;
     x = xinit + PAN_1ST_ROW_INT;
     uint16_t but = 0;
     for (; but < 3; but++) {
@@ -88,51 +94,31 @@ void panelConstruct(SDL_Renderer* rend)
     }
 }
 
-void panelLoop(uint32_t ms)
-{
-    // static uint8_t line = 0;
-    // MidiTsMessageT mt;
-    // if (MIDI_RET_OK == midiRead(&mt)) {
-    //     mgsDisplay(&display_multi_mgldisp);
-    //     mgsCursorAbs(0, line * 8);
-    //     line++;
-    //     if (line == 8)
-    //         line = 0;
-    //     mgdHex32(mt.mes.full_word, mgColorHsv(0, 255, 128));
-    //     // mgdChar('-', mgColorHsv(0, 255, 128));
-    //     mgdHex32(mt.timestamp, mgColorHsv(0, 255, 128));
+#define DISPLAY_LINES 5
+#define DISPLAY_FONTHGTH 6
 
-    //     // lock test
-    //     if (mt.mes.cn == MIDI_CN_LOCALPANEL) {
-    //         if ((MIDI_CIN_NOTEON == mt.mes.cin)
-    //             && (mt.mes.byte2 == 0)) {
-    //             //
-    //             potLock(&pots[0].potdata, 1, 1);
-    //         }
-    //         if ((MIDI_CIN_NOTEON == mt.mes.cin)
-    //             && (mt.mes.byte2 == 1)) {
-    //             //
-    //             potLock(&pots[1].potdata, 128 * 16, 1);
-    //         }
-    //         if ((MIDI_CIN_NOTEON == mt.mes.cin)
-    //             && (mt.mes.byte2 == 2)) {
-    //             //
-    //             potLock(&pots[2].potdata, 128 * 64, 1);
-    //         }
-    //         if ((MIDI_CIN_NOTEON == mt.mes.cin)
-    //             && (mt.mes.byte2 == 3)) {
-    //             //
-    //             potLock(&pots[3].potdata, 128 * 128 - 1, 1);
-    //         }
-    //     }
-    // }
-    // if (MIDI_RET_OK == midiSysexRead(&mt.mes)) {
-    //     mgsDisplay(&display_multi_mgldisp);
-    //     mgsCursorAbs(0, line * 8);
-    //     line++;
-    //     if (line == 8)
-    //         line = 0;
-    //     mgdHex32(mt.mes.full_word, mgColorHsv(0, 255, 128));
-    //     mgdString("-syx-", mgColorHsv(0, 255, 128));
-    // }
+void panelLoop(uint32_t clock)
+{
+    static uint8_t line = 0;
+    MidiTsMessageT mt;
+    // if
+    while (MIDI_RET_OK == midiRead(&mt)) {
+        mgsDisplay(&display_mono_mgldisp);
+        mgsCursorAbs(0, line * DISPLAY_FONTHGTH);
+        line++;
+        if (line == DISPLAY_LINES)
+            line = 0;
+        mgdHex32(mt.mes.full_word, COLOR_ON);
+        // mgdChar('-', mgColorHsv(0, 255, 128));
+        mgdHex32(mt.timestamp, COLOR_ON);
+    }
+    while (MIDI_RET_OK == midiSysexRead(&mt.mes)) {
+        mgsDisplay(&display_mono_mgldisp);
+        mgsCursorAbs(0, line * DISPLAY_FONTHGTH);
+        line++;
+        if (line == DISPLAY_LINES)
+            line = 0;
+        mgdHex32(mt.mes.full_word, COLOR_ON);
+        mgdString("-syx-", COLOR_ON);
+    }
 }

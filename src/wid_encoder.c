@@ -49,10 +49,10 @@ static void wEncRedraw(void* wid)
         drawStringCentered(&v->v, d / 2, d / 2 - 4, v->name, color);
     }
 }
-static void wEncProcess(void* wid, uint32_t ms)
+static void wEncProcess(void* wid, uint32_t clock)
 {
     WidgetEnc* v = (WidgetEnc*)wid;
-    (void)ms;
+    (void)clock;
     int16_t d = v->value_drag - v->value_send;
     int16_t ds = d / ENCODER_SHIFT;
     if (0 != ds) {
@@ -61,7 +61,7 @@ static void wEncProcess(void* wid, uint32_t ms)
         else if (ds < -64)
             ds = -64;
         wEncMidiSend(v->midictrl, ds + 64);
-        v->value_send += ds * ENCODER_SHIFT;
+        v->value_send = v->value_drag;
         v->v.need_redraw = 1;
     }
 }
@@ -120,7 +120,8 @@ static WidgetApi wEncApi = {
     .keyboard = wEncKeyboard,
     .mouseMove = wEncMouseMove,
     .mouseClick = wEncMouseClick,
-    .mouseWheel = wEncMouseWheel
+    .mouseWheel = wEncMouseWheel,
+    .terminate = 0
 };
 
 void wEncInit(

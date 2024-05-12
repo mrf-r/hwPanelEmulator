@@ -4,7 +4,7 @@
 
 // --- to be implemented by user
 void panelConstruct(SDL_Renderer* rend);
-void panelLoop(uint32_t ms);
+void panelLoop(uint32_t clock);
 // ---
 
 uint32_t lcg;
@@ -63,6 +63,8 @@ static inline void widgetFreeAll()
 {
     Widget* v = panel.list_start;
     while (0 != v) {
+        if (v->api->terminate)
+            v->api->terminate(v->parent);
         SDL_DestroyTexture(v->texture);
         SDL_FreeSurface(v->surface);
         v = v->next;
@@ -88,12 +90,12 @@ static inline void widgetRedrawAll()
         v = v->next;
     }
 }
-static inline void widgetProcessAll(uint32_t ms)
+static inline void widgetProcessAll(uint32_t clock)
 {
     Widget* v = panel.list_start;
     while (0 != v) {
         if (v->api->process)
-            v->api->process(v->parent, ms);
+            v->api->process(v->parent, clock);
         v = v->next;
     }
 }
@@ -177,12 +179,12 @@ int main(int argc, char* argv[])
             SDL_Delay(1);
 
             // process widgets
-            uint32_t ms;
-            ms = SDL_GetTicks();
-            widgetProcessAll(ms);
-            
+            uint32_t clock;
+            clock = SDL_GetTicks();
+            widgetProcessAll(clock);
+
             // process panel
-            panelLoop(ms); // TODO: should we also multiply panel processing?
+            panelLoop(clock); // TODO: should we also multiply panel processing?
 
             // TODO: check if it is time to frame update ???
             // update framebuffer

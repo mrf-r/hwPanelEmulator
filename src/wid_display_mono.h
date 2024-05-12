@@ -18,6 +18,9 @@ typedef struct {
 } WidgetDisplayMono;
 
 // please, use this macro to create a display object
+// this will creates minimalgraphics api
+// all you need in your app is mgl library with a pointer to MglDisplay <name>_mgldisp obejct
+// colors are COLOR_OFF, COLOR_ON, or COLOR_INVERT
 // w, h - width and height in pixels (ex. 128, 64 - for popular oled panel)
 #define WID_DISPLAY_MONO_DEFINE(inst_name, w, h)                                                                              \
     static WidgetDisplayMono inst_name;                                                                                       \

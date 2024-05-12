@@ -2,8 +2,12 @@
 #include "wid_graphics.h"
 
 // display
+#ifndef DISPM_COLOR_BACK
 #define DISPM_COLOR_BACK 0x000000FF // blue inverted
+#endif
+#ifndef DISPM_COLOR_PIXEL
 #define DISPM_COLOR_PIXEL 0xFFFFFF
+#endif
 // #define DISPM_COLOR_BACK 0x0040C000 // green standart
 // #define DISPM_COLOR_PIXEL 0x0
 #define DISPM_ALPHA 0xA0
@@ -53,7 +57,8 @@ static WidgetApi wDispMonoApi = {
     .keyboard = 0,
     .mouseMove = 0,
     .mouseClick = 0,
-    .mouseWheel = 0
+    .mouseWheel = 0,
+    .terminate = 0
 };
 
 void wDisplayMonoInit(

@@ -13,11 +13,12 @@ typedef struct {
     // redraw called each frame
     void (*redraw)(void* wid);
     // process potentially not tied to frame rate, can be called more often or less often
-    void (*process)(void* wid, uint32_t ms);
+    void (*process)(void* wid, uint32_t clock);
     void (*keyboard)(void* wid, SDL_Event* e);
     void (*mouseMove)(void* wid, SDL_Point* pos, uint8_t click);
     void (*mouseClick)(void* wid, SDL_Point* pos, Drag* d);
     void (*mouseWheel)(void* wid, SDL_Point* pos, int32_t delta);
+    void (*terminate)(void* wid);
 } WidgetApi;
 
 typedef struct Widget_ {

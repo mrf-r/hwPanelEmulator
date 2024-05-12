@@ -205,14 +205,18 @@ static inline uint16_t drawChar(uint32_t* fb, uint16_t xp, uint16_t yp, uint16_t
 {
     if ((c < 0x20) || (c > 0x7f))
         return xp;
-    int pixelpos_max = h * w;
+    // int pixelpos_max = h * w;
     const uint8_t* bmp = &fnt_6_blcd[(c - 0x20) * 8];
     for (int y = 0; y < 8; y++) {
         for (int x = 0; x < 8; x++) {
-            if ((bmp[y] >> (7 - x)) & 0x1) {
-                int pixelpos = (yp + y) * w + xp + x;
-                if (pixelpos < pixelpos_max)
+            int py = yp + y;
+            int px = xp + x;
+            if ((py < h) && (px < w)) {
+                if ((bmp[y] >> (7 - x)) & 0x1) {
+                    int pixelpos = py * w + px;
+                    // if (pixelpos < pixelpos_max)
                     fb[pixelpos] = color;
+                }
             }
         }
     }

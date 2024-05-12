@@ -8,7 +8,7 @@
 
 #define POT_MAX (128 * 128)
 
-#define POT_PERIOD_MS 1 // 1ms = 1kHz
+#define POT_PERIOD_CLK_CYCLES 1 // 1ms = 1kHz
 #define POT_BITS_ADC 10 // <16
 #define POT_BITS_CLEAN 7 // <POT_BITS_ADC
 #if (POT_BITS_ADC >= 14) || (POT_BITS_CLEAN > POT_BITS_ADC)
@@ -57,13 +57,13 @@ static void wPotRedraw(void* wid)
         drawU16Centered(&v->v, d / 2, d - 9, v->potdata.locked, panel.widget_color_helptext);
     }
 }
-static void wPotProcess(void* wid, uint32_t ms)
+static void wPotProcess(void* wid, uint32_t clock)
 {
     WidgetPot* v = (WidgetPot*)wid;
     // TODO: overflow???
     uint16_t pot = 0;
-    while ((int32_t)(v->prev_ms - ms) < 0) {
-        v->prev_ms += POT_PERIOD_MS;
+    while ((int32_t)(v->prev_ms - clock) < 0) {
+        v->prev_ms += POT_PERIOD_CLK_CYCLES;
 
         uint32_t noise_flt = widgetRandom();
         int32_t noise_emu = widgetRandom();
@@ -151,7 +151,8 @@ static WidgetApi wPotApi = {
     .keyboard = 0,
     .mouseMove = wPotMouseMove,
     .mouseClick = wPotMouseClick,
-    .mouseWheel = wPotMouseWheel
+    .mouseWheel = wPotMouseWheel,
+    .terminate = 0
 };
 
 void wPotInit(

@@ -9,6 +9,7 @@
 #include "wid_display_character.h"
 #include "wid_display_mono.h"
 #include "wid_display_multi.h"
+#include "wid_midi.h"
 
 
 

@@ -1,8 +1,9 @@
 #include "wid_framecounter.h"
 #include "wid_graphics.h"
+#include "mbwmidi.h"
 
 #define FRAMECOUNTER_COLOR 0xFF000000
-#define FRAMECOUNTER_PERIOD_MS 1000
+#define FRAMECOUNTER_PERIOD_CLK_CYCLES MIDI_CLOCK_RATE
 
 static uint32_t dec2bcd(uint16_t dec)
 {
@@ -17,13 +18,13 @@ static uint32_t dec2bcd(uint16_t dec)
     return result;
 }
 
-static void wFrameCounterProcess(void* wid, uint32_t ms)
+static void wFrameCounterProcess(void* wid, uint32_t clock)
 {
     WidgetFrameCounter* v = (WidgetFrameCounter*)wid;
-    uint32_t delta = ms - v->prev_frame;
+    uint32_t delta = clock - v->prev_frame;
     // TODO: overflow???
-    if (delta > FRAMECOUNTER_PERIOD_MS) {
-        v->prev_frame += FRAMECOUNTER_PERIOD_MS;
+    if (delta > FRAMECOUNTER_PERIOD_CLK_CYCLES) {
+        v->prev_frame += FRAMECOUNTER_PERIOD_CLK_CYCLES;
         v->frames_proc = v->counter_proc;
         v->counter_proc = 0;
         v->frames_redraw = v->counter_redraw;
@@ -47,10 +48,11 @@ static void wFrameCounterRedraw(void* wid)
     if (v->v.need_redraw) {
         v->v.need_redraw = 0;
         SDL_FillRect(v->v.surface, 0, 0);
+        drawOutline(&v->v, panel.widget_color_released);
         uint32_t bcd = dec2bcd(v->frames_proc);
-        drawU16Centered(&v->v, 20, 0, bcd, panel.widget_color_helptext);
+        drawU16Centered(&v->v, 20, 2, bcd, panel.widget_color_helptext);
         bcd = dec2bcd(v->frames_redraw);
-        drawU16Centered(&v->v, 20, 8, bcd, panel.widget_color_helptext);
+        drawU16Centered(&v->v, 20, 10, bcd, panel.widget_color_helptext);
     }
 }
 
@@ -60,7 +62,8 @@ static WidgetApi wFrameCounterApi = {
     .keyboard = 0,
     .mouseMove = 0,
     .mouseClick = 0, // wEncMouseClick, TODO: reset max ?
-    .mouseWheel = 0
+    .mouseWheel = 0,
+    .terminate = 0
 };
 
 void wFrameCounterInit(
@@ -69,7 +72,7 @@ void wFrameCounterInit(
     uint16_t y,
     SDL_Renderer* rend)
 {
-    widgetInit(&v->v, (void*)v, &wFrameCounterApi, x, y, 40, 16, 1, rend);
+    widgetInit(&v->v, (void*)v, &wFrameCounterApi, x, y, 40, 19, 1, rend);
     v->prev_frame = SDL_GetTicks();
     v->counter_proc = v->counter_redraw = 0;
 }

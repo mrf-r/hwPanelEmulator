@@ -43,10 +43,10 @@ static void wButtonRedraw(void* wid)
         drawString(&v->v, d / 6, d * 2 / 3, v->kbd, panel.widget_color_helptext);
     }
 }
-static void wButtonProcess(void* wid, uint32_t ms)
+static void wButtonProcess(void* wid, uint32_t clock)
 {
     WidgetButton* v = (WidgetButton*)wid;
-    (void)ms;
+    (void)clock;
     const uint8_t point_mask = (uint8_t) ~(BUT_SRC_INT | BUT_SRC_POINTED);
     if ((v->pointed & BUT_SRC_INT) && (0 == (v->pointed & point_mask))) {
         v->pointed &= ~BUT_SRC_INT;
@@ -112,7 +112,8 @@ static WidgetApi wButtonApi = {
     .keyboard = wButtonKeyboard,
     .mouseMove = wButtonMouseMove,
     .mouseClick = wButtonMouseClick,
-    .mouseWheel = 0
+    .mouseWheel = 0,
+    .terminate = 0
 };
 
 void wButtonInit(

@@ -5,12 +5,6 @@
 #include "mgl.h"
 
 // display
-#define DISP_COLOR_BACK 0x000000FF // blue inverted
-#define DISP_COLOR_PIXEL 0xFFFFFF
-// #define DISP_COLOR_BACK 0x0040C000 // green standart
-// #define DISP_COLOR_PIXEL 0x0
-#define DISP_ALPHA 0xA0
-#define DISP_GAP 2
 extern const MglFont _5x7mod;
 
 typedef struct {
@@ -26,6 +20,9 @@ typedef struct {
 } WidgetDisplayMulti;
 
 // please, use this macro to create a display object
+// this will creates minimalgraphics api
+// all you need in your app is mgl library with a pointer to MglDisplay <name>_mgldisp obejct
+// internal colors are RGBA8888, but this is an emulation of the popular RGB565 with added dithering
 // w, h - width and height in pixels (ex. 320, 240 - for popular tft panel)
 #define WID_DISPLAY_MULTI_DEFINE(inst_name, w, h)                                                                             \
     static WidgetDisplayMulti inst_name;                                                                                      \

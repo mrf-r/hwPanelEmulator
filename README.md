@@ -7,10 +7,10 @@ Tested in Linux and MINGW64.
 
 The idea is to have Arduino-like simplicity in building control surface in pure c. All actual panel code located in `user/` folder by default. You can change it by `make DIR_USER=my_superbest_panel`. There are basically only 2 callbacks:
 - `void panelConstruct(SDL_Renderer* rend)` - in which you must init various widgets you need on your surface
-- `void panelLoop(uint32_t ms)` - in which you must handle those widgets (the application part), perform midi processing and routing and other logic you need
+- `void panelLoop(uint32_t clock)` - in which you must handle those widgets (the application part), perform midi processing and routing and other logic you need
 
 ## widgets
-All widgets generates events in form of midi messages. You can differentiate them by CN (cable number) field in message structure (for details see my mbwmidi library and USB MIDI class specs).
+All widgets generates events in form of midi messages. You can differentiate them by CN (cable number) field in message structure (for details see my mbwmidi library and USB MIDI class specs). All widgets have leds (RGB). For the displays led acts as a backlight color.
 - Button - can be pressed by the mouse or keyboard. Will generate events on press and release
 - Encoder - can be turned by the mouse drag, scroll wheels, or 2 keyboard keys for inc and dec. Will generate events with relative signed values depending on the travel distance.
 - Pot - emulation of the common microcontroller potentiometer + ADC circuit, will generate high resolution midi values with some noise. can be dragged by mouse or by scroll wheels. Can be locked in case of function or patch change (part of mbwmidi library).

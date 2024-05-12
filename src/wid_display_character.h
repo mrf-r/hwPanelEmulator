@@ -26,6 +26,8 @@ typedef struct {
 } WidgetDisplayCh;
 
 // please, use this macro to create a display object
+// it will also create minimalgraphics api for internal use
+// all you need in your app is a pointer to WidgetDisplayCh obejct and set of wDisplayCh.. methods from below
 // ch_w, ch_h - width and height in characters (ex. 16, 2 - for 1602 lcd panel)
 #define WID_DISPLAY_CHAR_DEFINE(inst_name, ch_w, ch_h)                                                                        \
     static WidgetDisplayCh inst_name;                                                                                         \

@@ -5,7 +5,7 @@
 // TODO: put all wids in one .h ?
 
 void panelConstruct(SDL_Renderer* rend);
-void panelLoop(uint32_t ms);
+void panelLoop(uint32_t clock);
 
 typedef struct {
     const char* name;
@@ -160,7 +160,7 @@ void panelConstruct(SDL_Renderer* rend)
     potThresholdSet(&pots[3].potdata, 2);
 }
 
-void panelLoop(uint32_t ms)
+void panelLoop(uint32_t clock)
 {
     static uint8_t line = 0;
     MidiTsMessageT mt;
