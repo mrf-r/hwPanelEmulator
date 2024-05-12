@@ -12,8 +12,8 @@
 void wMidiStart(WidgetMidi* v)
 {
     // init midi and try to find needed ports
-    PmError err;
-    err = Pm_Initialize();
+    // PmError err;
+    Pm_Initialize();
     int dev_count = Pm_CountDevices();
     // WMIDI_PRINTF("\n default in: %d", Pm_GetDefaultInputDeviceID());
     // WMIDI_PRINTF("\n default out: %d", Pm_GetDefaultOutputDeviceID());
@@ -102,11 +102,11 @@ void wMidiStart(WidgetMidi* v)
                     SDL_strlcpy(v->name_out, port_desc, VIDMIDI_NAMELENGTH - 2);
                 } else {
                     // open another one for output
-                    if (SP_OK != sp_copy_port(port, &v->inst_output))
+                    if (SP_OK != sp_copy_port(port, (struct sp_port**)&v->inst_output))
                         goto ser_out_error;
-                    if (SP_OK != sp_open(v->inst_output, SP_MODE_READ_WRITE))
+                    if (SP_OK != sp_open((struct sp_port*)v->inst_output, SP_MODE_READ_WRITE))
                         goto ser_out_error;
-                    if (SP_OK != sp_set_config(v->inst_output, config))
+                    if (SP_OK != sp_set_config((struct sp_port*)v->inst_output, config))
                         goto ser_out_error;
                     v->status_out = VMIDI_ACTIVE_SER;
                     SDL_strlcpy(v->name_out, port_desc, VIDMIDI_NAMELENGTH - 2);
@@ -143,8 +143,8 @@ void wMidiStop(WidgetMidi* v)
         v->inst_output = 0;
         v->status_out = VMIDI_OFF;
     } else if (VMIDI_ACTIVE_SER == v->status_out) {
-        sp_close(v->inst_output);
-        sp_free_port(v->inst_output);
+        sp_close((struct sp_port*)v->inst_output);
+        sp_free_port((struct sp_port*)v->inst_output);
         v->inst_output = 0;
         v->status_out = VMIDI_OFF;
     }
@@ -185,7 +185,7 @@ static inline void pmEventSysexReceive(WidgetMidi* v, PmEvent ev)
     // sysex timestamps are ignored
     for (int i = 0; i < 4; i++) {
         uint8_t b = (ev.message >> (i * 4)) & 0xFF;
-        if (b = 0xF7) {
+        if (0xF7 == b) {
             // termination
             MidiMessageT m;
             m.cn = MIDI_CN_USB_DEVICE;
@@ -265,10 +265,11 @@ static void wMidiProcess(void* wid, uint32_t clock)
 {
     WidgetMidi* v = (WidgetMidi*)wid;
     if (VMIDI_ACTIVE_PM == v->status_in) {
-        PmError err;
+        // PmError err;
         PmEvent rx;
         while (1 == Pm_Read((PortMidiStream*)v->inst_input, &rx, 1)) {
             pmEventReceive(v, rx);
+            v->counter_in++;
         }
     } else if (VMIDI_ACTIVE_SER == v->status_in) {
         // ser
@@ -278,6 +279,11 @@ static void wMidiProcess(void* wid, uint32_t clock)
         //
     } else if (VMIDI_ACTIVE_SER == v->status_out) {
         // ser
+    }
+    if ((v->counter_in_prev != v->counter_in) || (v->counter_out_prev != v->counter_out)) {
+        v->counter_in_prev = v->counter_in;
+        v->counter_out_prev = v->counter_out;
+        v->v.need_redraw = 1;
     }
 }
 static void wMidiMouseMove(void* wid, SDL_Point* pos, uint8_t click)
