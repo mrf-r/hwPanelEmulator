@@ -51,12 +51,29 @@ static void wDispMonoRedraw(void* wid)
     }
 }
 
+static void wDispMonoMouseClick(void* wid, SDL_Point* pos, Drag* d)
+{
+    WidgetDisplayMono* v = (WidgetDisplayMono*)wid;
+    if (SDL_PointInRect(pos, &v->v.rect)) {
+        // TODO: add timestamp to filename YYMMDD-HHMMSS-MSEC-screenshot.bmp
+#ifdef DISPLAY_SCREENSHOT_DISABLE_ALPHA
+        // disable alpha before saving
+        uint32_t* framebuffer = (uint32_t*)v->v.surface->pixels;
+        unsigned len = v->v.surface->h * v->v.surface->w;
+        for (unsigned i = 0; i < len; i++) {
+            framebuffer[i] = framebuffer[i] | 0xFF000000;
+        }
+        v->v.need_redraw = 1;
+#endif // DISPLAY_SCREENSHOT_DISABLE_ALPHA
+        SDL_SaveBMP(v->v.surface, "screenshot2.bmp");
+    }
+}
 static WidgetApi wDispMonoApi = {
     .redraw = wDispMonoRedraw,
     .process = 0,
     .keyboard = 0,
     .mouseMove = 0,
-    .mouseClick = 0,
+    .mouseClick = wDispMonoMouseClick,
     .mouseWheel = 0,
     .terminate = 0
 };

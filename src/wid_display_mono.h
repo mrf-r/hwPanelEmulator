@@ -4,6 +4,8 @@
 #include "widget.h"
 #include "mgl.h"
 
+// #define DISPLAY_SCREENSHOT_DISABLE_ALPHA
+
 typedef struct {
     Widget v;
     uint32_t color_pix;

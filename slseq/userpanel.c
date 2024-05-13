@@ -51,6 +51,7 @@ void panelConstruct(SDL_Renderer* rend)
     wmidi_io.name_in[0] = wmidi_io.name_out[0] = 'M';
     wmidi_io.name_in[1] = wmidi_io.name_out[1] = 'P';
     wmidi_io.name_in[2] = wmidi_io.name_out[2] = 'K';
+    wmidi_io.baud = 31250;
     wMidiInit(&wmidi_io, 70, 0, rend);
 
     uint16_t xinit = PAN_BORDER;
@@ -109,12 +110,13 @@ void panelLoop(uint32_t clock)
         if (line == DISPLAY_LINES)
             line = 0;
         mgdHex32(mt.mes.full_word, COLOR_ON);
-        // mgdChar('-', mgColorHsv(0, 255, 128));
+        mgdChar('-', mgColorHsv(0, 255, 128));
         mgdHex32(mt.timestamp, COLOR_ON);
 
         // play keys
         if ((MIDI_CN_LOCALPANEL == mt.mes.cn) && ((MIDI_CIN_NOTEOFF == mt.mes.cin) || (MIDI_CIN_NOTEON == mt.mes.cin))) {
             mt.mes.byte2 += 0x20; // shift up slightly
+            mt.mes.byte3 *= 100; 
             midiPortWrite(&midi_out_port, mt.mes);
         }
     }
