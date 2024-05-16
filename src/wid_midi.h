@@ -30,7 +30,8 @@ typedef struct {
     uint8_t pointed;
     char name_in[VIDMIDI_NAMELENGTH];
     char name_out[VIDMIDI_NAMELENGTH];
-    uint32_t baud;
+    uint32_t baud_virtual;
+    uint32_t baud_physical_serial;
     // PortMidiStream* pm_input;
     // PortMidiStream* pm_output;
     // sp_port* ser_input;

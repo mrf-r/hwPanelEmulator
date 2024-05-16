@@ -2,8 +2,6 @@
 #include "panel.h"
 #include "mbwmidi.h"
 
-// TODO: put all wids in one .h ?
-
 void panelConstruct(SDL_Renderer* rend);
 void panelLoop(uint32_t clock);
 
@@ -48,10 +46,10 @@ extern const MglFont _5monotxt;
 void panelConstruct(SDL_Renderer* rend)
 {
     wFrameCounterInit(&framecounter, 20, 0, rend);
-    wmidi_io.name_in[0] = wmidi_io.name_out[0] = 'M';
-    wmidi_io.name_in[1] = wmidi_io.name_out[1] = 'P';
-    wmidi_io.name_in[2] = wmidi_io.name_out[2] = 'K';
-    wmidi_io.baud = 31250;
+    SDL_strlcpy(wmidi_io.name_in, "MPK", VIDMIDI_NAMELENGTH);
+    SDL_strlcpy(wmidi_io.name_out, "MPK", VIDMIDI_NAMELENGTH);
+    wmidi_io.baud_virtual = 31250;
+    wmidi_io.baud_physical_serial = 115200;
     wMidiInit(&wmidi_io, 70, 0, rend);
 
     uint16_t xinit = PAN_BORDER;
