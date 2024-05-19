@@ -201,10 +201,12 @@ static const uint8_t fnt_6_width[] = {
     0x5 /*  */
 };
 
-static inline uint16_t drawChar(uint32_t* fb, uint16_t xp, uint16_t yp, uint16_t w, uint16_t h, const char c, const uint32_t color)
+static inline uint16_t drawChar(uint32_t* fb, uint16_t xp, uint16_t yp, uint16_t w, uint16_t h, const char ch, const uint32_t color)
 {
+    char c = ch;
     if ((c < 0x20) || (c > 0x7f))
-        return xp;
+        // return xp;
+        c = 0x7f;
     // int pixelpos_max = h * w;
     const uint8_t* bmp = &fnt_6_blcd[(c - 0x20) * 8];
     for (int y = 0; y < 8; y++) {

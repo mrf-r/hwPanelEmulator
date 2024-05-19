@@ -22,32 +22,29 @@ __attribute__((weak)) void wEncMidiSend(uint8_t midictrl, uint8_t value)
 static void wEncRedraw(void* wid)
 {
     WidgetEnc* v = (WidgetEnc*)wid;
-    if (v->v.need_redraw) {
-        v->v.need_redraw = 0;
-        uint32_t color = panel.widget_color_released;
-        if (v->pointed) {
-            if (v->pointed > 1)
-                color = panel.widget_color_pressed;
-            else
-                color = panel.widget_color_pointed;
-        }
-        drawOutline(&v->v, color);
-        drawLedFill(&v->v, color);
-        drawCircle(&v->v, 0, color);
-        uint16_t d = v->v.surface->w;
-        for (int i = 0; i < ENCODER_NOTCHES; i++) {
-            float value = -(uint16_t)(v->value_drag << 4) + (65536 / ENCODER_NOTCHES) * i;
-            float angle = (float)value * (1.f / (65536.f)) * (PI_F * 2.f);
-            float x = SDL_sinf(angle);
-            float y = SDL_cosf(angle);
-            int32_t xs = x * (float)(d / 2 - 2) + d / 2;
-            int32_t xe = x * (float)(d / 3) + d / 2;
-            int32_t ys = y * (float)(d / 2 - 2) + d / 2;
-            int32_t ye = y * (float)(d / 3) + d / 2;
-            drawLine(&v->v, xs, ys, xe, ye, d, color);
-        }
-        drawStringCentered(&v->v, d / 2, d / 2 - 4, v->name, color);
+    uint32_t color = panel.widget_color_released;
+    if (v->pointed) {
+        if (v->pointed > 1)
+            color = panel.widget_color_pressed;
+        else
+            color = panel.widget_color_pointed;
     }
+    drawOutline(&v->v, color);
+    drawLedFill(&v->v, color);
+    drawCircle(&v->v, 0, color);
+    uint16_t d = v->v.surface->w;
+    for (int i = 0; i < ENCODER_NOTCHES; i++) {
+        float value = -(uint16_t)(v->value_drag << 4) + (65536 / ENCODER_NOTCHES) * i;
+        float angle = (float)value * (1.f / (65536.f)) * (PI_F * 2.f);
+        float x = SDL_sinf(angle);
+        float y = SDL_cosf(angle);
+        int32_t xs = x * (float)(d / 2 - 2) + d / 2;
+        int32_t xe = x * (float)(d / 3) + d / 2;
+        int32_t ys = y * (float)(d / 2 - 2) + d / 2;
+        int32_t ye = y * (float)(d / 3) + d / 2;
+        drawLine(&v->v, xs, ys, xe, ye, d, color);
+    }
+    drawStringCentered(&v->v, d / 2, d / 2 - 4, v->name, color);
 }
 static void wEncProcess(void* wid, uint32_t clock)
 {

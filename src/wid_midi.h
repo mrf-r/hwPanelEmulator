@@ -56,7 +56,11 @@ void wMidiInit(
     WidgetMidi* v,
     uint16_t x,
     uint16_t y,
-    SDL_Renderer* rend);
+    SDL_Renderer* rend,
+    const char* dev_name_in,
+    const char* dev_name_out,
+    uint32_t baud_virtual,
+    uint32_t baud_serial);
 
 extern MidiOutPortContextT midi_out_port;
 

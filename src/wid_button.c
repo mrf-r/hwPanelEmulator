@@ -27,21 +27,18 @@ __attribute__((weak)) void wButtonMidiSend(uint8_t midictrl, uint8_t value)
 static void wButtonRedraw(void* wid)
 {
     WidgetButton* v = (WidgetButton*)wid;
-    if (v->v.need_redraw) {
-        v->v.need_redraw = 0;
-        uint32_t color = panel.widget_color_released;
-        if (v->pointed) {
-            if (v->pointed > 1)
-                color = panel.widget_color_pressed;
-            else
-                color = panel.widget_color_pointed;
-        }
-        drawOutline(&v->v, color);
-        drawLedFill(&v->v, color);
-        uint16_t d = v->v.surface->w;
-        drawStringCentered(&v->v, d / 2, d / 2 - 4, v->name, color);
-        drawString(&v->v, d / 6, d * 2 / 3, v->kbd, panel.widget_color_helptext);
+    uint32_t color = panel.widget_color_released;
+    if (v->pointed) {
+        if (v->pointed > 1)
+            color = panel.widget_color_pressed;
+        else
+            color = panel.widget_color_pointed;
     }
+    drawOutline(&v->v, color);
+    drawLedFill(&v->v, color);
+    uint16_t d = v->v.surface->w;
+    drawStringCentered(&v->v, d / 2, d / 2 - 4, v->name, color);
+    drawString(&v->v, d / 6, d * 2 / 3, v->kbd, panel.widget_color_helptext);
 }
 static void wButtonProcess(void* wid, uint32_t clock)
 {

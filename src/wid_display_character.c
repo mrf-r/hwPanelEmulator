@@ -17,31 +17,28 @@ extern const MglFont _5x7mod;
 static void wDispChRedraw(void* wid)
 {
     WidgetDisplayCh* v = (WidgetDisplayCh*)wid;
-    if (v->v.need_redraw) {
-        v->v.need_redraw = 0;
-        drawOutline(&v->v, panel.widget_color_released);
+    drawOutline(&v->v, panel.widget_color_released);
 
-        mgsDisplay(v->disp);
+    mgsDisplay(v->disp);
 
-        mgsFont(&_5x7mod);
-        MglColor led = { .wrd = (v->v.led & 0x00FFFFFF) | (DISPCH_ALPHA << 24) };
-        MglColor pix = { .wrd = (v->color_pix & 0x00FFFFFF) | (DISPCH_ALPHA << 24) };
-        mgsBackColor(led);
-        mgdFill(led);
-        pix = mgAlphablend(0x60, pix, led);
-        pix.alpha = DISPCH_ALPHA;
-        for (uint8_t y = 0; y < 4; y++) {
-            for (uint8_t x = 0; x < 80; x++) {
-                mgsCursorAbs(x * DISPCH_CHAR_W + DISPCH_GAP, y * DISPCH_CHAR_H + DISPCH_GAP);
-                char c = v->text[y][x];
-                if (c >= 0x20) {
-                    if ((signed char)c < 0)
-                        c = 127;
-                    mgdChar(c, pix);
-                } else if (c < 8) {
-                    mgdBitmap(&v->cgram[c * 8], 5, 7, 7, pix);
-                    ;
-                }
+    mgsFont(&_5x7mod);
+    MglColor led = { .wrd = (v->v.led & 0x00FFFFFF) | (DISPCH_ALPHA << 24) };
+    MglColor pix = { .wrd = (v->color_pix & 0x00FFFFFF) | (DISPCH_ALPHA << 24) };
+    mgsBackColor(led);
+    mgdFill(led);
+    pix = mgAlphablend(0x60, pix, led);
+    pix.alpha = DISPCH_ALPHA;
+    for (uint8_t y = 0; y < 4; y++) {
+        for (uint8_t x = 0; x < 80; x++) {
+            mgsCursorAbs(x * DISPCH_CHAR_W + DISPCH_GAP, y * DISPCH_CHAR_H + DISPCH_GAP);
+            char c = v->text[y][x];
+            if (c >= 0x20) {
+                if ((signed char)c < 0)
+                    c = 127;
+                mgdChar(c, pix);
+            } else if (c < 8) {
+                mgdBitmap(&v->cgram[c * 8], 5, 7, 7, pix);
+                ;
             }
         }
     }

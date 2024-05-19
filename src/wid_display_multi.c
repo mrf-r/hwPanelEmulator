@@ -4,10 +4,7 @@
 static void wDispMultiRedraw(void* wid)
 {
     WidgetDisplayMulti* v = (WidgetDisplayMulti*)wid;
-    if (v->v.need_redraw) {
-        v->v.need_redraw = 0;
-        drawOutline(&v->v, panel.widget_color_released);
-    }
+    drawOutline(&v->v, panel.widget_color_released);
 }
 
 static WidgetApi wDispMultiApi = {

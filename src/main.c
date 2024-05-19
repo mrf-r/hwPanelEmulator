@@ -85,8 +85,10 @@ static inline void widgetRedrawAll()
 {
     Widget* v = panel.list_start;
     while (0 != v) {
-        if (v->api->redraw)
+        if ((v->api->redraw) && (v->need_redraw)) {
+            v->need_redraw = 0;
             v->api->redraw(v->parent);
+        }
         v = v->next;
     }
 }

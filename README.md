@@ -24,9 +24,9 @@ All widgets generates events in form of midi messages. You can differentiate the
     - For serial devices an actual port setting should be specified (i.e. 9600 or 115200 or 31250..)
     - For both midi and serial devices flow limiter value should be specified (virtual baud). You are free to experiment with different rates. For example, if you are using some old synths, you can lower the baud from 31250 to 10000 or even less. Minimal virtual baud is 10 bits per second.
 Should be compatible with Arduino MIDI over serial.
+- audio - !only one instance can be used! based on portaudio library. In case you want to experiment with synthesis. It can be inited with NULL instead of device names to select default devices. You will need to provide audio callback for block calculation `void audioBufferProcessCallback(int16_t* const buffer_in, int16_t* const buffer_out, const uint16_t length)`. For now it is called from portaudio library, so all thread safety is on you. I'm thinking about calling it from widget process, but it will introduce additional latency.
 
 ## future widgets
-- audio - portaudio in case you want to experiment with synthesis
 - file - in case you want to experiment with patches or audio samples
 
 # dependencies:
@@ -36,10 +36,11 @@ Should be compatible with Arduino MIDI over serial.
 
 # TODO:
 - primary:
-    - audio widget
     - makefile to split build process? and to allow multiple files for user panel.
     - COORDINATES AND SCALES ARE MESS
 - secondary
+    - default audio device is not the one with lowest latency (on Win)
+    - does audio work in a systems with no input(output) devices?
     - performance analysis (?)
     - filesystem integration (?)
     - eeprom emulation
@@ -48,3 +49,6 @@ Should be compatible with Arduino MIDI over serial.
     - additional configs load (midi ports and audio selection, color scheme, size/scale?)
         - runtme panel init from config (simplified functionality) ?
     - always on top switch?
+    - multiple midi IO (within one widget)
+    - multiple audio IO
+    - audio SRC for weird samplerates (arbitraty between 10k and 384k)

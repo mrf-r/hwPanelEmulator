@@ -3,8 +3,8 @@
 #include "mbwmidi.h"
 
 #include "stdio.h"
-#define WMIDI_PRINTF printf
-// #define WMIDI_PRINTF(...)
+// #define WMIDI_PRINTF printf
+#define WMIDI_PRINTF(...)
 
 #include "midi_portmidi.h"
 #include "midi_libserialport.h"
@@ -31,27 +31,24 @@ static void wMidiStop(WidgetMidi* v)
 static void wMidiRedraw(void* wid)
 {
     WidgetMidi* v = (WidgetMidi*)wid;
-    if (v->v.need_redraw) {
-        v->v.need_redraw = 0;
-        SDL_FillRect(v->v.surface, 0, 0);
-        drawOutline(&v->v, v->pointed ? panel.widget_color_pointed : panel.widget_color_released);
-        if (v->pointed) {
-            v->name_in[VIDMIDI_NAMELENGTH - 1] = 0;
-            v->name_out[VIDMIDI_NAMELENGTH - 1] = 0;
-            uint32_t color = panel.widget_color_pressed;
-            if ((VMIDI_ACTIVE_PM == v->status_in) || (VMIDI_ACTIVE_SER == v->status_in)) {
-                color = panel.widget_color_released;
-            }
-            drawString(&v->v, 2, 2, v->name_in, color);
-            color = panel.widget_color_pressed;
-            if ((VMIDI_ACTIVE_PM == v->status_out) || (VMIDI_ACTIVE_SER == v->status_out)) {
-                color = panel.widget_color_released;
-            }
-            drawString(&v->v, 2, 10, v->name_out, color);
-        } else {
-            drawU16Centered(&v->v, 20, 2, v->counter_in, panel.widget_color_helptext);
-            drawU16Centered(&v->v, 20, 10, v->counter_out, panel.widget_color_helptext);
+    SDL_FillRect(v->v.surface, 0, 0);
+    drawOutline(&v->v, v->pointed ? panel.widget_color_pointed : panel.widget_color_released);
+    if (v->pointed) {
+        v->name_in[VIDMIDI_NAMELENGTH - 1] = 0;
+        v->name_out[VIDMIDI_NAMELENGTH - 1] = 0;
+        uint32_t color = panel.widget_color_pressed;
+        if ((VMIDI_ACTIVE_PM == v->status_in) || (VMIDI_ACTIVE_SER == v->status_in)) {
+            color = panel.widget_color_released;
         }
+        drawString(&v->v, 2, 2, v->name_in, color);
+        color = panel.widget_color_pressed;
+        if ((VMIDI_ACTIVE_PM == v->status_out) || (VMIDI_ACTIVE_SER == v->status_out)) {
+            color = panel.widget_color_released;
+        }
+        drawString(&v->v, 2, 10, v->name_out, color);
+    } else {
+        drawU16Centered(&v->v, 20, 2, v->counter_in, panel.widget_color_helptext);
+        drawU16Centered(&v->v, 20, 10, v->counter_out, panel.widget_color_helptext);
     }
 }
 
@@ -132,11 +129,20 @@ void wMidiInit(
     WidgetMidi* v,
     uint16_t x,
     uint16_t y,
-    SDL_Renderer* rend)
+    SDL_Renderer* rend,
+    const char* dev_name_in,
+    const char* dev_name_out,
+    uint32_t baud_virtual,
+    uint32_t baud_serial)
 {
     static int already_inited = 0;
     SDL_assert(0 == already_inited);
-    already_inited ++; // singletone
+    already_inited++; // singletone
+
+    SDL_strlcpy(v->name_in, dev_name_in, VIDMIDI_NAMELENGTH);
+    SDL_strlcpy(v->name_out, dev_name_out, VIDMIDI_NAMELENGTH);
+    v->baud_virtual = baud_virtual;
+    v->baud_physical_serial = baud_serial;
 
     widgetInit(&v->v, (void*)v, &wMidiApi, x, y, 40, 19, 1, rend);
     v->status_in = v->status_out = VMIDI_OFF;

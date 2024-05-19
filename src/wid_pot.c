@@ -18,44 +18,41 @@
 static void wPotRedraw(void* wid)
 {
     WidgetPot* v = (WidgetPot*)wid;
-    if (v->v.need_redraw) {
-        v->v.need_redraw = 0;
-        uint32_t color = panel.widget_color_released;
-        if (v->pointed) {
-            if (v->pointed > 1)
-                color = panel.widget_color_pressed;
-            else
-                color = panel.widget_color_pointed;
-        }
-        drawOutline(&v->v, color);
-        drawLedFill(&v->v, color);
-        uint16_t d = v->v.surface->w;
-        drawCircle(&v->v, 9, color);
-        { // draw lock notch
-            float value = (float)v->potdata.locked * (-1 / (128.f * 128.f));
-            float angle = value * (PI_F * 1.5f) - PI_F * 0.25f;
-            float x = SDL_sinf(angle);
-            float y = SDL_cosf(angle);
-            int32_t xs = x * (float)(d / 2 - 2) + d / 2;
-            int32_t xe = x * (float)(d / 3) + d / 2;
-            int32_t ys = y * (float)(d / 2 - 2) + d / 2;
-            int32_t ye = y * (float)(d / 3) + d / 2;
-            drawLine(&v->v, xs, ys, xe, ye, d, panel.widget_color_helptext);
-        }
-        { // draw actual notch
-            float value = (float)v->potdata.current * (-1 / (128.f * 128.f));
-            float angle = value * (PI_F * 1.5f) - PI_F * 0.25f;
-            float x = SDL_sinf(angle);
-            float y = SDL_cosf(angle);
-            int32_t xs = x * (float)(d / 2 - 2) + d / 2;
-            int32_t xe = x * (float)(d / 3) + d / 2;
-            int32_t ys = y * (float)(d / 2 - 2) + d / 2;
-            int32_t ye = y * (float)(d / 3) + d / 2;
-            drawLine(&v->v, xs, ys, xe, ye, d, color);
-        }
-        drawStringCentered(&v->v, d / 2, d / 2 - 4, v->name, color);
-        drawU16Centered(&v->v, d / 2, d - 9, v->potdata.locked, panel.widget_color_helptext);
+    uint32_t color = panel.widget_color_released;
+    if (v->pointed) {
+        if (v->pointed > 1)
+            color = panel.widget_color_pressed;
+        else
+            color = panel.widget_color_pointed;
     }
+    drawOutline(&v->v, color);
+    drawLedFill(&v->v, color);
+    uint16_t d = v->v.surface->w;
+    drawCircle(&v->v, 9, color);
+    { // draw lock notch
+        float value = (float)v->potdata.locked * (-1 / (128.f * 128.f));
+        float angle = value * (PI_F * 1.5f) - PI_F * 0.25f;
+        float x = SDL_sinf(angle);
+        float y = SDL_cosf(angle);
+        int32_t xs = x * (float)(d / 2 - 2) + d / 2;
+        int32_t xe = x * (float)(d / 3) + d / 2;
+        int32_t ys = y * (float)(d / 2 - 2) + d / 2;
+        int32_t ye = y * (float)(d / 3) + d / 2;
+        drawLine(&v->v, xs, ys, xe, ye, d, panel.widget_color_helptext);
+    }
+    { // draw actual notch
+        float value = (float)v->potdata.current * (-1 / (128.f * 128.f));
+        float angle = value * (PI_F * 1.5f) - PI_F * 0.25f;
+        float x = SDL_sinf(angle);
+        float y = SDL_cosf(angle);
+        int32_t xs = x * (float)(d / 2 - 2) + d / 2;
+        int32_t xe = x * (float)(d / 3) + d / 2;
+        int32_t ys = y * (float)(d / 2 - 2) + d / 2;
+        int32_t ye = y * (float)(d / 3) + d / 2;
+        drawLine(&v->v, xs, ys, xe, ye, d, color);
+    }
+    drawStringCentered(&v->v, d / 2, d / 2 - 4, v->name, color);
+    drawU16Centered(&v->v, d / 2, d - 9, v->potdata.locked, panel.widget_color_helptext);
 }
 static void wPotProcess(void* wid, uint32_t clock)
 {

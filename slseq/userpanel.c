@@ -37,6 +37,7 @@ static WidgetEnc encoder;
 WID_DISPLAY_MONO_DEFINE(display_mono, 122, 32) // static monochrome display
 static WidgetFrameCounter framecounter;
 static WidgetMidi wmidi_io;
+static WidgetAudio waudio;
 
 #define LCD_SCALE 3
 #define LCD_DEF_WTD ((122 + 6) * LCD_SCALE)
@@ -46,11 +47,9 @@ extern const MglFont _5monotxt;
 void panelConstruct(SDL_Renderer* rend)
 {
     wFrameCounterInit(&framecounter, 20, 0, rend);
-    SDL_strlcpy(wmidi_io.name_in, "MPK", VIDMIDI_NAMELENGTH);
-    SDL_strlcpy(wmidi_io.name_out, "MPK", VIDMIDI_NAMELENGTH);
-    wmidi_io.baud_virtual = 31250;
-    wmidi_io.baud_physical_serial = 115200;
-    wMidiInit(&wmidi_io, 70, 0, rend);
+    wMidiInit(&wmidi_io, 70, 0, rend, "MPK", "MPK", 31250, 115200);
+    wAudioInit(&waudio, 120, 0, rend, 0, 0, 48000, 32);
+    // wAudioInit(&waudio, 120, 0, rend, "Mic", "Spe", 48000, 32);
 
     uint16_t xinit = PAN_BORDER;
 
@@ -126,5 +125,18 @@ void panelLoop(uint32_t clock)
             line = 0;
         mgdHex32(mt.mes.full_word, COLOR_ON);
         mgdString("-syx-", COLOR_ON);
+    }
+}
+
+void audioBufferProcessCallback(int16_t* const buffer_in, int16_t* const buffer_out, const uint16_t length)
+{
+    int16_t* __restrict in = buffer_in;
+    int16_t* __restrict out = buffer_out;
+    int16_t* const out_end = buffer_out + (length * 2); // stereo
+
+    // heavily inspired by the KORG Logue SDK https://github.com/korginc/logue-sdk
+    for (; out_end > out; out += 2, in += 2) {
+        out[0] = in[0];
+        out[1] = in[1];
     }
 }

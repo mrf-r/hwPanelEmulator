@@ -45,15 +45,15 @@ static void wFrameCounterRedraw(void* wid)
     if (v->counter_redraw < 9999)
         v->counter_redraw++;
 
-    if (v->v.need_redraw) {
-        v->v.need_redraw = 0;
-        SDL_FillRect(v->v.surface, 0, 0);
-        drawOutline(&v->v, panel.widget_color_released);
-        uint32_t bcd = dec2bcd(v->frames_proc);
-        drawU16Centered(&v->v, 20, 2, bcd, panel.widget_color_helptext);
-        bcd = dec2bcd(v->frames_redraw);
-        drawU16Centered(&v->v, 20, 10, bcd, panel.widget_color_helptext);
-    }
+    // if (v->v.need_redraw) {
+    // v->v.need_redraw = 0;
+    SDL_FillRect(v->v.surface, 0, 0);
+    drawOutline(&v->v, panel.widget_color_released);
+    uint32_t bcd = dec2bcd(v->frames_proc);
+    drawU16Centered(&v->v, 20, 2, bcd, panel.widget_color_helptext);
+    bcd = dec2bcd(v->frames_redraw);
+    drawU16Centered(&v->v, 20, 10, bcd, panel.widget_color_helptext);
+    // }
 }
 
 static WidgetApi wFrameCounterApi = {
