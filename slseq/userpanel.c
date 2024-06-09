@@ -113,7 +113,7 @@ void panelLoop(uint32_t clock)
         // play keys
         if ((MIDI_CN_LOCALPANEL == mt.mes.cn) && ((MIDI_CIN_NOTEOFF == mt.mes.cin) || (MIDI_CIN_NOTEON == mt.mes.cin))) {
             mt.mes.byte2 += 0x20; // shift up slightly
-            mt.mes.byte3 *= 100; 
+            mt.mes.byte3 *= 100;
             midiPortWrite(&midi_out_port, mt.mes);
         }
     }
@@ -132,7 +132,7 @@ void audioBufferProcessCallback(int16_t* const buffer_in, int16_t* const buffer_
 {
     int16_t* __restrict in = buffer_in;
     int16_t* __restrict out = buffer_out;
-    int16_t* const out_end = buffer_out + (length * 2); // stereo
+    const int16_t* out_end = buffer_out + (length * 2); // stereo
 
     // heavily inspired by the KORG Logue SDK https://github.com/korginc/logue-sdk
     for (; out_end > out; out += 2, in += 2) {

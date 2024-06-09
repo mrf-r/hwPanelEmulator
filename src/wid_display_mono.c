@@ -1,5 +1,6 @@
 #include "wid_display_mono.h"
 #include "wid_graphics.h"
+#include "panel_conf.h"
 
 // display
 #ifndef DISPM_COLOR_BACK

@@ -23,9 +23,9 @@ DIRS_INCLUDE := $(DIR_SRC) $(DIR_USER)
 SOURCES_C :=
 SOURCES_C += $(wildcard $(DIR_SRC)/*.c)
 # SOURCES_C += $(DIR_SRC)/main.c
-# SOURCES_C += $(wildcard $(DIR_USER)/*.c)
+SOURCES_C += $(wildcard $(DIR_USER)/*.c)
 # SOURCES_C += $(DIR_USER)/userpanel_empty.c
-SOURCES_C += $(DIR_USER)/userpanel.c
+# SOURCES_C += $(DIR_USER)/userpanel.c
 
 #######################################
 # user libraries

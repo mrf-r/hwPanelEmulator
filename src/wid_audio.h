@@ -21,6 +21,7 @@ typedef struct {
     uint32_t blocksize;
     void* instance;
     uint8_t status;
+    uint16_t lastblocksize;
     uint16_t blockcounter;
     uint16_t errorcounter;
     uint16_t error_last;

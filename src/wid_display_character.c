@@ -1,6 +1,7 @@
 
 #include "wid_display_character.h"
 #include "wid_graphics.h"
+#include "panel_conf.h"
 
 // display
 // #define DISPCH_COLOR_BACK 0x000000FF // blue inverted
@@ -8,7 +9,7 @@
 #ifndef DISPCH_COLOR_BACK
 #define DISPCH_COLOR_BACK 0x0040C000 // green standart
 #endif
-#ifndef DISPM_COLOR_PIXEL
+#ifndef DISPCH_COLOR_PIXEL
 #define DISPCH_COLOR_PIXEL 0x0
 #endif
 #define DISPCH_ALPHA 0xA0

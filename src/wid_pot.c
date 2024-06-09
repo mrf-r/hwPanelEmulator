@@ -59,6 +59,7 @@ static void wPotProcess(void* wid, uint32_t clock)
     WidgetPot* v = (WidgetPot*)wid;
     // TODO: overflow???
     uint16_t pot = 0;
+    uint32_t adc_max = 0x3FFF & (0xFFFF << (14 - POT_BITS_ADC));
     while ((int32_t)(v->prev_ms - clock) < 0) {
         v->prev_ms += POT_PERIOD_CLK_CYCLES;
 
@@ -66,6 +67,9 @@ static void wPotProcess(void* wid, uint32_t clock)
         int32_t noise_emu = widgetRandom();
         // true value
         int32_t adc = v->analog_src14b;
+        if (adc > adc_max) {
+            adc = adc_max;
+        }
         // emulated hw + ADC noise
         adc += noise_emu / (1 << (31 - (POT_BITS_ADC - POT_BITS_CLEAN)));
         if (adc < 0) {

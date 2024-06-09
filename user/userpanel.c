@@ -178,23 +178,19 @@ void panelLoop(uint32_t clock)
         if (mt.mes.cn == MIDI_CN_LOCALPANEL) {
             if ((MIDI_CIN_NOTEON == mt.mes.cin)
                 && (mt.mes.byte2 == 0)) {
-                //
-                potLock(&pots[0].potdata, 1, 1);
+                potLockFetch(&pots[0].potdata, 1);
             }
             if ((MIDI_CIN_NOTEON == mt.mes.cin)
                 && (mt.mes.byte2 == 1)) {
-                //
-                potLock(&pots[1].potdata, 128 * 16, 1);
+                potLockFetch(&pots[1].potdata, 128 * 16);
             }
             if ((MIDI_CIN_NOTEON == mt.mes.cin)
                 && (mt.mes.byte2 == 2)) {
-                //
-                potLock(&pots[2].potdata, 128 * 64, 1);
+                potLockFetch(&pots[2].potdata, 128 * 64);
             }
             if ((MIDI_CIN_NOTEON == mt.mes.cin)
                 && (mt.mes.byte2 == 3)) {
-                //
-                potLock(&pots[3].potdata, 128 * 128 - 1, 1);
+                potLockFetch(&pots[3].potdata, 128 * 128 - 1);
             }
         }
     }

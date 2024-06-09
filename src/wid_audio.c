@@ -14,7 +14,7 @@ void audioBufferProcessCallback(int16_t* const buffer_in, int16_t* const buffer_
 //     static float right_phase = 0;
 //     int16_t* __restrict in = buffer_in;
 //     int16_t* __restrict out = buffer_out;
-//     int16_t* const out_end = buffer_out + (length * 2); // stereo
+//     const int16_t* out_end = buffer_out + (length * 2); // stereo
 //     // heavily inspired by the KORG Logue SDK https://github.com/korginc/logue-sdk
 //     for (; out_end > out; out += 2, in += 2) {
 //         // out[0] = in[0];
@@ -44,6 +44,8 @@ static int paCallback16(const void* inputBuffer, void* outputBuffer,
         v->error_last = (uint16_t)statusFlags; // no statuses defined above
     }
     v->blockcounter++;
+    v->lastblocksize = framesPerBuffer;
+
     audioBufferProcessCallback((int16_t*)inputBuffer, (int16_t*)outputBuffer, framesPerBuffer);
     return paContinue;
 }
@@ -55,6 +57,7 @@ static void wAudioRedraw(void* wid)
     drawOutline(&v->v, v->pointed ? panel.widget_color_pointed : panel.widget_color_released);
     if (v->pointed) {
         drawU16Centered(&v->v, 20, 2, v->blockcounter, panel.widget_color_pressed);
+        drawU16Centered(&v->v, 20, 10, v->lastblocksize, panel.widget_color_pressed);
         v->v.need_redraw = 1; // ))
     } else {
         if ((!v->errorcounter) || (0 == v->error_last)) {
@@ -158,6 +161,7 @@ void wAudioInit(
     else
         v->name_out[0] = 0;
     v->samplerate = samplerate;
+    v->blocksize = blocksize;
 
     widgetInit(&v->v, (void*)v, &wAudioApi, x, y, 40, 19, 1, rend);
     v->status = VAUDIO_OFF;
