@@ -6,7 +6,29 @@
 #define WAUDIO_PRINTF printf
 // #define WAUDIO_PRINTF(...)
 
-void audioBufferProcessCallback(int16_t* const buffer_in, int16_t* const buffer_out, const uint16_t length);
+static unsigned portaudio_requests = 0;
+static PaError portaudio_status;
+
+static void portaudioInitGlobal()
+{
+    if (0 == portaudio_requests) {
+        portaudio_status = Pa_Initialize();
+        WAUDIO_PRINTF("\nPa_Initialize: %s", Pa_GetErrorText(portaudio_status));
+    }
+    portaudio_requests++;
+}
+
+static void portaudioTerminateGlobal()
+{
+    portaudio_requests--;
+    if (0 == portaudio_requests) {
+        PaError err;
+        err = Pa_Terminate();
+        printf("\nPa_Terminate: %s", Pa_GetErrorText(err));
+    }
+}
+
+// void audioBufferProcessCallback(int16_t* const buffer_in, int16_t* const buffer_out, const uint16_t length);
 
 // __attribute__((weak)) void audioBufferProcessCallback(int16_t* const buffer_in, int16_t* const buffer_out, const uint16_t length)
 // {
@@ -30,25 +52,6 @@ void audioBufferProcessCallback(int16_t* const buffer_in, int16_t* const buffer_
 //             right_phase -= 2.0f;
 //     }
 // }
-
-static int paCallback16(const void* inputBuffer, void* outputBuffer,
-    unsigned long framesPerBuffer,
-    const PaStreamCallbackTimeInfo* timeInfo,
-    PaStreamCallbackFlags statusFlags,
-    void* userData)
-{
-    // TODO: do something with timeInfo?
-    WidgetAudio* v = (WidgetAudio*)userData;
-    if (statusFlags) {
-        v->errorcounter++;
-        v->error_last = (uint16_t)statusFlags; // no statuses defined above
-    }
-    v->blockcounter++;
-    v->lastblocksize = framesPerBuffer;
-
-    audioBufferProcessCallback((int16_t*)inputBuffer, (int16_t*)outputBuffer, framesPerBuffer);
-    return paContinue;
-}
 
 static void wAudioRedraw(void* wid)
 {
@@ -82,8 +85,6 @@ static void wAudioProcess(void* wid, uint32_t clock)
         v->errorcounter_prev = errorcounter;
         v->v.need_redraw = 1;
     }
-    // draw samples per frame
-    // fill the buffer???? do not calculate in PA callback???
 }
 
 static void wAudioTerminate(void* wid)
@@ -100,8 +101,7 @@ static void wAudioTerminate(void* wid)
             err = Pa_CloseStream((PaStream*)v->instance);
             printf("\nPa_CloseStream: %s", Pa_GetErrorText(err));
         }
-        err = Pa_Terminate();
-        printf("\nPa_Terminate: %s", Pa_GetErrorText(err));
+        portaudioTerminateGlobal();
     }
 }
 
@@ -146,7 +146,8 @@ void wAudioInit(
     const char* dev_name_in,
     const char* dev_name_out,
     uint32_t samplerate,
-    uint32_t blocksize)
+    uint32_t blocksize,
+    PaStreamCallback* pa_callback_name)
 {
     static int already_inited = 0;
     SDL_assert(0 == already_inited);
@@ -172,12 +173,11 @@ void wAudioInit(
     WAUDIO_PRINTF("\n wAudioInit");
 
     PaError err;
-    err = Pa_Initialize();
-    WAUDIO_PRINTF("\nPa_Initialize: %s", Pa_GetErrorText(err));
-    if (paNoError == err) {
+    portaudioInitGlobal(); // this will modify global portaudio_status
+    if (paNoError == portaudio_status) {
         if ((0 == v->name_in[0]) && (0 == v->name_out[0])) {
             // names are not defined, use default devices
-            err = Pa_OpenDefaultStream((PaStream**)&v->instance, 2, 2, paInt16, v->samplerate, v->blocksize, paCallback16, v);
+            err = Pa_OpenDefaultStream((PaStream**)&v->instance, 2, 2, paInt16, v->samplerate, v->blocksize, pa_callback_name, v);
             WAUDIO_PRINTF("\nPa_OpenDefaultStream: %s", Pa_GetErrorText(err));
             if (0 == err) {
                 err = Pa_StartStream((PaStream*)v->instance);
@@ -251,7 +251,7 @@ void wAudioInit(
                     const PaDeviceInfo* dout_info = Pa_GetDeviceInfo(stream_out.device);
                     SDL_strlcpy(v->name_in, din_info->name, VIDAUDIO_NAMELENGTH - 2);
                     SDL_strlcpy(v->name_out, dout_info->name, VIDAUDIO_NAMELENGTH - 2);
-                    err = Pa_OpenStream((PaStream**)&v->instance, &stream_in, &stream_out, v->samplerate, v->blocksize, paNoFlag, paCallback16, v);
+                    err = Pa_OpenStream((PaStream**)&v->instance, &stream_in, &stream_out, v->samplerate, v->blocksize, paNoFlag, pa_callback_name, v);
                     WAUDIO_PRINTF("\nPa_OpenStream: %s", Pa_GetErrorText(err));
                     if (0 == err) {
                         err = Pa_StartStream((PaStream*)v->instance);

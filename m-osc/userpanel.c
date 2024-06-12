@@ -5,6 +5,7 @@
 
 void panelConstruct(SDL_Renderer* rend);
 void panelLoop(uint32_t clock);
+void synthAudioCallback(int16_t* const buffer_in, int16_t* const buffer_out, const uint16_t length);
 
 typedef struct {
     const char* name;
@@ -36,6 +37,7 @@ static ButtonDef bdef[] = {
 static WidgetPot pots[POTS_COUNT];
 static WidgetButton buttons[BUTTONS_COUNT];
 WID_DISPLAY_MONO_DEFINE(display_mono, DISP_XSIZE, DISP_YSIZE) // static monochrome display
+WID_AUDIO_CALLBACK_DEFINE(paCallback, synthAudioCallback)
 static WidgetFrameCounter framecounter;
 static WidgetMidi wmidi_io;
 static WidgetAudio waudio;
@@ -53,7 +55,7 @@ void panelConstruct(SDL_Renderer* rend)
     // and then frontend
     wFrameCounterInit(&framecounter, 20, 0, rend);
     wMidiInit(&wmidi_io, 70, 0, rend, "MPK", "MPK", 31250, 115200);
-    wAudioInit(&waudio, 120, 0, rend, 0, 0, 48000, 32);
+    wAudioInit(&waudio, 120, 0, rend, 0, 0, 48000, 32, paCallback);
 
     uint16_t xinit = PAN_BORDER;
     uint16_t y = PAN_BORDER;
@@ -89,53 +91,60 @@ void panelConstruct(SDL_Renderer* rend)
     }
 }
 
-void panelLoop(uint32_t clock)
+static inline void panelHandleMidi(MidiMessageT m)
 {
-    MidiTsMessageT mt;
-    while (MIDI_RET_OK == midiRead(&mt)) {
-        synthHandleMidi(mt.mes);
-        if (MIDI_CIN_NOTEON == mt.mes.cin) {
-            if (mt.mes.byte2 == 0) {
-                widgetLed(&buttons[0].v, 0x0000FF00);
-            } else {
-                widgetLed(&buttons[1].v, 0x0000FF00);
+    if (MIDI_CN_LOCALPANEL != m.cn) {
+        // update local panel from external midi controller
+        if (MIDI_CIN_CONTROLCHANGE == m.cin) {
+            if ((POT_FIRST_CC_NUM >= m.byte2)
+                && (m.byte2 < POT_FIRST_CC_NUM + POTS_COUNT)) {
+                uint16_t old_val = pots[m.byte2 - POT_FIRST_CC_NUM].potdata.locked;
+                uint16_t new_val = parameterReceiveMsb(old_val, m.byte3);
+                potLockFetch(&pots[m.byte2 - POT_FIRST_CC_NUM].potdata, new_val);
             }
-        } else if (MIDI_CIN_NOTEOFF == mt.mes.cin) {
-            if (mt.mes.byte2 == 0) {
+            if ((POT_FIRST_CC_NUM + 0x20 >= m.byte2)
+                && (m.byte2 < POT_FIRST_CC_NUM + 0x20 + POTS_COUNT)) {
+                uint16_t old_val = pots[m.byte2 - POT_FIRST_CC_NUM].potdata.locked;
+                uint16_t new_val = parameterReceiveLsb(old_val, m.byte3);
+                potLockFetch(&pots[m.byte2 - POT_FIRST_CC_NUM - 0x20].potdata, new_val);
+            }
+        } else if (MIDI_CIN_NOTEON == m.cin) {
+            if (m.byte2 == 0) {
+                widgetLed(&buttons[0].v, 0x00FF00FF);
+            } else {
+                widgetLed(&buttons[1].v, 0x00FF00FF);
+            }
+        } else if (MIDI_CIN_NOTEOFF == m.cin) {
+            if (m.byte2 == 0) {
                 widgetLed(&buttons[0].v, 0);
             } else {
                 widgetLed(&buttons[1].v, 0);
             }
         }
-        if (MIDI_CN_LOCALPANEL != mt.mes.cn) {
-            // update local panel
-            if (MIDI_CIN_CONTROLCHANGE == mt.mes.cin) {
-                if ((POT_FIRST_CC_NUM >= mt.mes.byte2)
-                    && (mt.mes.byte2 < POT_FIRST_CC_NUM + POTS_COUNT)) {
-                    uint16_t old_val = pots[mt.mes.byte2 - POT_FIRST_CC_NUM].potdata.locked;
-                    uint16_t new_val = parameterReceiveMsb(old_val, mt.mes.byte3);
-                    potLockFetch(&pots[mt.mes.byte2 - POT_FIRST_CC_NUM].potdata, new_val);
-                }
-                if ((POT_FIRST_CC_NUM + 0x20 >= mt.mes.byte2)
-                    && (mt.mes.byte2 < POT_FIRST_CC_NUM + 0x20 + POTS_COUNT)) {
-                    uint16_t old_val = pots[mt.mes.byte2 - POT_FIRST_CC_NUM].potdata.locked;
-                    uint16_t new_val = parameterReceiveLsb(old_val, mt.mes.byte3);
-                    potLockFetch(&pots[mt.mes.byte2 - POT_FIRST_CC_NUM - 0x20].potdata, new_val);
-                }
-            } else if (MIDI_CIN_NOTEON == mt.mes.cin) {
-                if (mt.mes.byte2 == 0) {
-                    widgetLed(&buttons[0].v, 0x00FF00FF);
-                } else {
-                    widgetLed(&buttons[1].v, 0x00FF00FF);
-                }
-            } else if (MIDI_CIN_NOTEOFF == mt.mes.cin) {
-                if (mt.mes.byte2 == 0) {
-                    widgetLed(&buttons[0].v, 0);
-                } else {
-                    widgetLed(&buttons[1].v, 0);
-                }
+    } else {
+        // add visual feedback for local buttons
+        if (MIDI_CIN_NOTEON == m.cin) {
+            if (m.byte2 == 0) {
+                widgetLed(&buttons[0].v, 0x0000FF00);
+            } else {
+                widgetLed(&buttons[1].v, 0x0000FF00);
+            }
+        } else if (MIDI_CIN_NOTEOFF == m.cin) {
+            if (m.byte2 == 0) {
+                widgetLed(&buttons[0].v, 0);
+            } else {
+                widgetLed(&buttons[1].v, 0);
             }
         }
+    }
+}
+
+void panelLoop(uint32_t clock)
+{
+    MidiTsMessageT mt;
+    while (MIDI_RET_OK == midiRead(&mt)) {
+        synthHandleMidi(mt.mes);
+        panelHandleMidi(mt.mes);
     }
     // mgsDisplay(&display_mono_mgldisp);
     scopeXYframe(&scope, 0, 0, display_mono_mgldisp.size_x, display_mono_mgldisp.size_y, COLOR_ON, COLOR_OFF);

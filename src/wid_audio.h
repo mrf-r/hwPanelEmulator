@@ -2,6 +2,7 @@
 #define __WID_AUDIO_H
 
 #include "widget.h"
+#include "portaudio.h"
 
 #define VIDAUDIO_NAMELENGTH 32
 
@@ -28,6 +29,28 @@ typedef struct {
     uint16_t errorcounter_prev;
 } WidgetAudio;
 
+// TODO: channels and bits?
+#define WID_AUDIO_CALLBACK_DEFINE(pa_callback_name, simplified_callback)                     \
+    static int pa_callback_name(                                                             \
+        const void* inputBuffer,                                                             \
+        void* outputBuffer,                                                                  \
+        unsigned long framesPerBuffer,                                                       \
+        const PaStreamCallbackTimeInfo* timeInfo,                                            \
+        PaStreamCallbackFlags statusFlags,                                                   \
+        void* userData)                                                                      \
+    {                                                                                        \
+        /* TODO: do something with timeInfo? */                                              \
+        WidgetAudio* v = (WidgetAudio*)userData;                                             \
+        if (statusFlags) {                                                                   \
+            v->errorcounter++;                                                               \
+            v->error_last = (uint16_t)statusFlags;                                           \
+        }                                                                                    \
+        v->blockcounter++;                                                                   \
+        v->lastblocksize = framesPerBuffer;                                                  \
+        simplified_callback((int16_t*)inputBuffer, (int16_t*)outputBuffer, framesPerBuffer); \
+        return paContinue;                                                                   \
+    }
+
 void wAudioInit(
     WidgetAudio* v,
     uint16_t x,
@@ -36,6 +59,7 @@ void wAudioInit(
     const char* dev_name_in,
     const char* dev_name_out,
     uint32_t samplerate,
-    uint32_t blocksize);
+    uint32_t blocksize,
+    PaStreamCallback* pa_callback_name);
 
 #endif // __WID_AUDIO_H

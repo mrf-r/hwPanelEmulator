@@ -157,7 +157,7 @@ int main(int argc, char* argv[])
     SDL_Window* screen = SDL_CreateWindow(PANEL_NAME,
         SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
         PANEL_SIZE_X * PANEL_SCALE, PANEL_SIZE_Y * PANEL_SCALE, 0);
-    SDL_Renderer* rend = SDL_CreateRenderer(screen, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    SDL_Renderer* rend = SDL_CreateRenderer(screen, -1, SDL_RENDERER_PRESENTVSYNC);
     SDL_Surface* surf = SDL_CreateRGBSurface(0, PANEL_SIZE_X, PANEL_SIZE_Y, 32, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
     SDL_Texture* texture = SDL_CreateTextureFromSurface(rend, surf);
 

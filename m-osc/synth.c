@@ -85,7 +85,7 @@ static inline int16_t audioProcessOneSample(VcoControlBlock* const vcb)
     return (int16_t)ret;
 }
 
-void audioBufferProcessCallback(int16_t* const buffer_in, int16_t* const buffer_out, const uint16_t length)
+void synthAudioCallback(int16_t* const buffer_in, int16_t* const buffer_out, const uint16_t length)
 {
     int16_t* __restrict in = buffer_in;
     int16_t* __restrict out = buffer_out;

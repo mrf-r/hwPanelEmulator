@@ -24,20 +24,30 @@ All widgets generates events in form of midi messages. You can differentiate the
     - For serial devices an actual port setting should be specified (i.e. 9600 or 115200 or 31250..)
     - For both midi and serial devices flow limiter value should be specified (virtual baud). You are free to experiment with different rates. For example, if you are using some old synths, you can lower the baud from 31250 to 10000 or even less. Minimal virtual baud is 10 bits per second.
 Should be compatible with Arduino MIDI over serial.
-- audio - !only one instance can be used! based on portaudio library. In case you want to experiment with synthesis. It can be inited with NULL instead of device names to select default devices. You will need to provide audio callback for block calculation `void audioBufferProcessCallback(int16_t* const buffer_in, int16_t* const buffer_out, const uint16_t length)`. For now it is called from portaudio library, so all thread safety is on you. I'm thinking about calling it from widget process, but it will introduce additional latency.
+- audio - based on portaudio library. In case you want to experiment with synthesis. It can be initialized with NULL instead of device names to select default devices. Portaudio callback for each audio connection should be created using `WID_AUDIO_CALLBACK_DEFINE` macro. When creating it, you need to specify the name of the callback to be created, which will be used when creating the widget, as well as the block handling method it will call. At the moment the call is made from portaudio library, so all thread safety is on you. I am thinking about calling it from widget process, but it will cause additional latency.
+
 
 ## future widgets
 - file - in case you want to experiment with patches or audio samples
 
 # dependencies:
-- make gcc pkgconf
-- SDL2 portmidi libserialport portaudio (probably with -dev suffix, TODO check on linux)
-- and do not forget to `git submodule update --init --recursive`
+- `mbwmidi` and `minimalgraphics` libraries. this is the main interface between hw and application.
+- make, gcc, pkgconf
+- SDL2, portmidi, libserialport, portaudio (probably with -dev suffix, TODO check on linux)
+- and do not forget to `git submodule update --init --recursive` if you want to build demo projects from this repo
+
+# integration:
+To use the emulator in your project, add the `src` folder to build (.c files) and include (.h files). Your project should also contain the `mbwmidi` and `minimalgraphics` libraries, but their `-conf.h` files should be used from the `src` folder! It is recommended to use `#include "panel.h"` in your files.
+
+All interactions are done via MIDI events. Each event has a 4-bit `cn` field (cable number) in addition to the midi bytes to be able to determine the source of this message. Accordingly, a project can have up to 16 midi sources. Sources can be defined in `panel_conf.h` and when defining and initializing midi widgets. Control of LEDs and potentiometers (and even a character display) can also be done using midi messages for ease of porting and potential remote operation. A simple solution would be a callback like `void panelHandleMidi(MidiMessageT m)`, but this is up to you.
 
 # TODO:
 - primary:
+    - panel midi callback for leds and pots processing from app or from the input
     - makefile to split build process? and to allow multiple files for user panel.
+        - integration process with instruction
     - COORDINATES AND SCALES ARE MESS
+    - leds control api
 - secondary
     - default audio device is not the one with lowest latency (on Win)
     - does audio work in a systems with no input(output) devices?
@@ -49,6 +59,9 @@ Should be compatible with Arduino MIDI over serial.
     - additional configs load (midi ports and audio selection, color scheme, size/scale?)
         - runtme panel init from config (simplified functionality) ?
     - always on top switch?
-    - multiple midi IO (within one widget)
-    - multiple audio IO
+    - multiple midi IO
+        - within one or multiple widgets?
+        - separate serial and midi
     - audio SRC for weird samplerates (arbitraty between 10k and 384k)
+    - cmake?
+    - SDL_WaitEvent without vsync? for variable framerate and mainloop rate

@@ -4,6 +4,7 @@
 
 void panelConstruct(SDL_Renderer* rend);
 void panelLoop(uint32_t clock);
+void audioBufferProcessCallback(int16_t* const buffer_in, int16_t* const buffer_out, const uint16_t length);
 
 typedef struct {
     const char* name;
@@ -35,6 +36,7 @@ static ButtonDef bdef[] = {
 static WidgetButton buttons[BUTTONS_COUNT];
 static WidgetEnc encoder;
 WID_DISPLAY_MONO_DEFINE(display_mono, 122, 32) // static monochrome display
+WID_AUDIO_CALLBACK_DEFINE(paCallback, audioBufferProcessCallback)
 static WidgetFrameCounter framecounter;
 static WidgetMidi wmidi_io;
 static WidgetAudio waudio;
@@ -48,8 +50,7 @@ void panelConstruct(SDL_Renderer* rend)
 {
     wFrameCounterInit(&framecounter, 20, 0, rend);
     wMidiInit(&wmidi_io, 70, 0, rend, "MPK", "MPK", 31250, 115200);
-    wAudioInit(&waudio, 120, 0, rend, 0, 0, 48000, 32);
-    // wAudioInit(&waudio, 120, 0, rend, "Mic", "Spe", 48000, 32);
+    wAudioInit(&waudio, 120, 0, rend, 0, 0, 48000, 32, paCallback);
 
     uint16_t xinit = PAN_BORDER;
 

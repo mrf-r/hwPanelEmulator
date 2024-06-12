@@ -1,7 +1,10 @@
 #ifndef __PANEL_H
 #define __PANEL_H
 
-#include "widget.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "wid_button.h"
 #include "wid_pot.h"
 #include "wid_encoder.h"
@@ -12,7 +15,8 @@
 #include "wid_midi.h"
 #include "wid_audio.h"
 
-
-
+#ifdef __cplusplus
+}
+#endif
 
 #endif // __PANEL_H
