@@ -49,10 +49,10 @@ static void wDispMonoRedraw(void* wid)
     }
 }
 
-static void wDispMonoMouseClick(void* wid, SDL_Point* pos, Drag* d)
+static void wDispMonoMouseClick(void* wid, WidgetTouchData* d)
 {
     WidgetDisplayMono* v = (WidgetDisplayMono*)wid;
-    if (SDL_PointInRect(pos, &v->v.rect)) {
+    if (SDL_PointInRect(&d->point, &v->v.rect)) {
         // TODO: add timestamp to filename YYMMDD-HHMMSS-MSEC-screenshot.bmp
 #ifdef DISPLAY_SCREENSHOT_DISABLE_ALPHA
         // disable alpha before saving
@@ -70,8 +70,8 @@ static WidgetApi wDispMonoApi = {
     .redraw = wDispMonoRedraw,
     .process = 0,
     .keyboard = 0,
-    .mouseMove = 0,
-    .mouseClick = wDispMonoMouseClick,
+    .touchMove = 0,
+    .touchClick = wDispMonoMouseClick,
     .mouseWheel = 0,
     .terminate = 0
 };

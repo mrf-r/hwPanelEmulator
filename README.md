@@ -2,7 +2,7 @@
 
 ![](slseq.png "example")
 
-Cross platform project for experimenting with different MIDI control panel layouts, sequencing and audio synthesis. Compatible with Arduino MIDI over serial.
+Cross platform project for experimenting with different MIDI control panel layouts, sequencing and audio synthesis. An attempt has been made to make the control as convenient as possible on a computer. Simultaneous input from the keyboard, mouse or multi-touch panel is supported.Compatible with Arduino MIDI over serial.
 
 Tested in Linux and MINGW64.
 
@@ -43,13 +43,10 @@ All interactions are done via MIDI events. Each event has a 4-bit `cn` field (ca
 
 # TODO:
 - primary:
-    - panel midi callback for leds and pots processing from app or from the input
     - makefile to split build process? and to allow multiple files for user panel.
         - integration process with instruction
     - COORDINATES AND SCALES ARE MESS
-    - leds control api
 - secondary
-    - default audio device is not the one with lowest latency (on Win)
     - does audio work in a systems with no input(output) devices?
     - performance analysis (?)
     - filesystem integration (?)

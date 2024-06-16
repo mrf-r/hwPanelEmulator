@@ -89,6 +89,13 @@ void panelConstruct(SDL_Renderer* rend)
         wButtonInit(&buttons[but], bdef[but].name, bdef[but].hint, bdef[but].keycode, bdef[but].midikey, x, y, rend);
         x += PAN_BUT_INC;
     }
+
+    GadgetEeprom eeprom = {
+        .name = "EEPROM_test",
+        .filepath = "EEPROM/eeprom.bin",
+        .size = 64
+    };
+    // wEepromInit(&eeprom);
 }
 
 static inline void panelHandleMidi(MidiMessageT m)

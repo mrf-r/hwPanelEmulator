@@ -5,9 +5,12 @@
 
 typedef struct
 {
+    SDL_Point point;
+    SDL_bool is_pressed;
+    SDL_FingerID finger;
     void* instance;
     void (*drag)(void* instance, int32_t delta);
-} Drag;
+} WidgetTouchData;
 
 typedef struct {
     // redraw called each frame
@@ -15,8 +18,8 @@ typedef struct {
     // process potentially not tied to frame rate, can be called more often or less often
     void (*process)(void* wid, uint32_t clock);
     void (*keyboard)(void* wid, SDL_Event* e);
-    void (*mouseMove)(void* wid, SDL_Point* pos, uint8_t click);
-    void (*mouseClick)(void* wid, SDL_Point* pos, Drag* d);
+    void (*touchMove)(void* wid, WidgetTouchData* d, unsigned touch_elements);
+    void (*touchClick)(void* wid, WidgetTouchData* d);
     void (*mouseWheel)(void* wid, SDL_Point* pos, int32_t delta);
     void (*terminate)(void* wid);
 } WidgetApi;

@@ -11,8 +11,8 @@ static WidgetApi wDispMultiApi = {
     .redraw = wDispMultiRedraw,
     .process = 0,
     .keyboard = 0,
-    .mouseMove = 0,
-    .mouseClick = 0,
+    .touchMove = 0,
+    .touchClick = 0,
     .mouseWheel = 0,
     .terminate = 0
 };

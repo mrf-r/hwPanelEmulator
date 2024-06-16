@@ -114,25 +114,24 @@ static void wPotDrag(void* instance, int32_t delta)
         v->analog_src14b = value;
     }
 }
-static void wPotMouseMove(void* wid, SDL_Point* pos, uint8_t click)
+static void wPotMouseMove(void* wid, WidgetTouchData* d, unsigned touch_elements)
 {
     WidgetPot* v = (WidgetPot*)wid;
-    (void)click;
-    uint8_t pointed = v->pointed;
-    if (SDL_PointInRect(pos, &v->v.rect)) {
-        pointed = 1;
-    } else {
-        pointed = 0;
+    uint8_t pointed = 0;
+    for (unsigned i = 0; i < touch_elements; i++) {
+        if (SDL_PointInRect(&d[i].point, &v->v.rect)) {
+            pointed = 1;
+        }
     }
     if (v->pointed != pointed) {
         v->v.need_redraw = 1;
     }
     v->pointed = pointed;
 }
-static void wPotMouseClick(void* wid, SDL_Point* pos, Drag* d)
+static void wPotMouseClick(void* wid, WidgetTouchData* d)
 {
     WidgetPot* v = (WidgetPot*)wid;
-    if (SDL_PointInRect(pos, &v->v.rect)) {
+    if (SDL_PointInRect(&d->point, &v->v.rect)) {
         v->pointed = 2;
         v->v.need_redraw = 1;
         d->instance = (void*)v;
@@ -150,8 +149,8 @@ static WidgetApi wPotApi = {
     .redraw = wPotRedraw,
     .process = wPotProcess,
     .keyboard = 0,
-    .mouseMove = wPotMouseMove,
-    .mouseClick = wPotMouseClick,
+    .touchMove = wPotMouseMove,
+    .touchClick = wPotMouseClick,
     .mouseWheel = wPotMouseWheel,
     .terminate = 0
 };

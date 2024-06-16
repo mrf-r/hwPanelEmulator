@@ -82,25 +82,24 @@ static void wMidiProcess(void* wid, uint32_t clock)
         v->v.need_redraw = 1;
     }
 }
-static void wMidiMouseMove(void* wid, SDL_Point* pos, uint8_t click)
+static void wMidiMouseMove(void* wid, WidgetTouchData* d, unsigned touch_elements)
 {
     WidgetMidi* v = (WidgetMidi*)wid;
-    (void)click;
-    uint8_t pointed = v->pointed;
-    if (SDL_PointInRect(pos, &v->v.rect)) {
-        pointed = 1;
-    } else {
-        pointed = 0;
+    uint8_t pointed = 0;
+    for (unsigned i = 0; i < touch_elements; i++) {
+        if (SDL_PointInRect(&d[i].point, &v->v.rect)) {
+            pointed = 1;
+        }
     }
     if (v->pointed != pointed) {
         v->v.need_redraw = 1;
     }
     v->pointed = pointed;
 }
-static void wMidiMouseClick(void* wid, SDL_Point* pos, Drag* d)
+static void wMidiMouseClick(void* wid, WidgetTouchData* d)
 {
     WidgetMidi* v = (WidgetMidi*)wid;
-    if (SDL_PointInRect(pos, &v->v.rect)) {
+    if (SDL_PointInRect(&d->point, &v->v.rect)) {
         WMIDI_PRINTF("\n midi reset");
         wMidiStop(v);
         // do something funny while midi is off?
@@ -119,8 +118,8 @@ static WidgetApi wMidiApi = {
     .redraw = wMidiRedraw,
     .process = wMidiProcess,
     .keyboard = 0,
-    .mouseMove = wMidiMouseMove, // highlight
-    .mouseClick = wMidiMouseClick, // click to menu switch
+    .touchMove = wMidiMouseMove, // highlight
+    .touchClick = wMidiMouseClick, // click to menu switch
     .mouseWheel = 0,
     .terminate = wMidiTerminate
 };

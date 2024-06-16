@@ -69,33 +69,31 @@ static void wButtonKeyboard(void* wid, SDL_Event* e)
     }
     v->pointed = pointed;
 }
-static void wButtonMouseMove(void* wid, SDL_Point* pos, uint8_t click)
+static void wButtonMouseMove(void* wid, WidgetTouchData* d, unsigned touch_elements)
 {
     WidgetButton* v = (WidgetButton*)wid;
-    uint8_t pointed = v->pointed;
-    if (SDL_PointInRect(pos, &v->v.rect)) {
-        pointed |= BUT_SRC_POINTED;
-        if (click)
-            pointed |= BUT_SRC_MOUSE;
-        else
-            pointed &= ~BUT_SRC_MOUSE;
-    } else {
-        pointed &= ~(BUT_SRC_MOUSE | BUT_SRC_POINTED);
+    uint8_t pointed = v->pointed; // need to preserve keyboard state
+    pointed &= ~(BUT_SRC_MOUSE | BUT_SRC_POINTED);
+    for (unsigned i = 0; i < touch_elements; i++) {
+        if (SDL_PointInRect(&d[i].point, &v->v.rect)) {
+            pointed |= BUT_SRC_POINTED;
+            if (SDL_TRUE == d[i].is_pressed) {
+                pointed |= BUT_SRC_MOUSE;
+            }
+        }
     }
     if (v->pointed != pointed) {
         v->v.need_redraw = 1;
     }
     v->pointed = pointed;
 }
-static void wButtonMouseClick(void* wid, SDL_Point* pos, Drag* d)
+static void wButtonMouseClick(void* wid, WidgetTouchData* d)
 {
     WidgetButton* v = (WidgetButton*)wid;
     (void)d;
     uint8_t pointed = v->pointed;
-    if (SDL_PointInRect(pos, &v->v.rect)) {
+    if (SDL_PointInRect(&d->point, &v->v.rect)) {
         pointed |= BUT_SRC_MOUSE | BUT_SRC_POINTED;
-    } else {
-        pointed &= ~(BUT_SRC_MOUSE | BUT_SRC_POINTED);
     }
     if (v->pointed != pointed) {
         v->v.need_redraw = 1;
@@ -107,8 +105,8 @@ static WidgetApi wButtonApi = {
     .redraw = wButtonRedraw,
     .process = wButtonProcess,
     .keyboard = wButtonKeyboard,
-    .mouseMove = wButtonMouseMove,
-    .mouseClick = wButtonMouseClick,
+    .touchMove = wButtonMouseMove,
+    .touchClick = wButtonMouseClick,
     .mouseWheel = 0,
     .terminate = 0
 };

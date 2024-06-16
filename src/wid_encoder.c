@@ -80,25 +80,24 @@ static void wEncKeyboard(void* wid, SDL_Event* e)
         }
     }
 }
-static void wEncMouseMove(void* wid, SDL_Point* pos, uint8_t click)
+static void wEncMouseMove(void* wid, WidgetTouchData* d, unsigned touch_elements)
 {
     WidgetEnc* v = (WidgetEnc*)wid;
-    (void)click;
-    uint8_t pointed = v->pointed;
-    if (SDL_PointInRect(pos, &v->v.rect)) {
-        pointed = 1;
-    } else {
-        pointed = 0;
+    uint8_t pointed = 0;
+    for (unsigned i = 0; i < touch_elements; i++) {
+        if (SDL_PointInRect(&d[i].point, &v->v.rect)) {
+            pointed = 1;
+        }
     }
     if (v->pointed != pointed) {
         v->v.need_redraw = 1;
     }
     v->pointed = pointed;
 }
-static void wEncMouseClick(void* wid, SDL_Point* pos, Drag* d)
+static void wEncMouseClick(void* wid, WidgetTouchData* d)
 {
     WidgetEnc* v = (WidgetEnc*)wid;
-    if (SDL_PointInRect(pos, &v->v.rect)) {
+    if (SDL_PointInRect(&d->point, &v->v.rect)) {
         v->pointed = 2;
         d->instance = (void*)v;
         d->drag = wEncDrag;
@@ -115,8 +114,8 @@ static WidgetApi wEncApi = {
     .redraw = wEncRedraw,
     .process = wEncProcess,
     .keyboard = wEncKeyboard,
-    .mouseMove = wEncMouseMove,
-    .mouseClick = wEncMouseClick,
+    .touchMove = wEncMouseMove,
+    .touchClick = wEncMouseClick,
     .mouseWheel = wEncMouseWheel,
     .terminate = 0
 };

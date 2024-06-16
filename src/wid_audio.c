@@ -105,25 +105,25 @@ static void wAudioTerminate(void* wid)
     }
 }
 
-static void wAudioMouseMove(void* wid, SDL_Point* pos, uint8_t click)
+static void wAudioMouseMove(void* wid, WidgetTouchData* d, unsigned touch_elements)
 {
     WidgetAudio* v = (WidgetAudio*)wid;
-    (void)click;
-    uint8_t pointed = v->pointed;
-    if (SDL_PointInRect(pos, &v->v.rect)) {
-        pointed = 1;
-    } else {
-        pointed = 0;
+    uint8_t pointed = 0;
+    for (unsigned i = 0; i < touch_elements; i++) {
+        if (SDL_PointInRect(&d[i].point, &v->v.rect)) {
+            pointed = 1;
+        }
     }
     if (v->pointed != pointed) {
         v->v.need_redraw = 1;
     }
     v->pointed = pointed;
 }
-static void wAudioMouseClick(void* wid, SDL_Point* pos, Drag* d)
+static void wAudioMouseClick(void* wid, WidgetTouchData* d)
 {
+    (void)d;
     WidgetAudio* v = (WidgetAudio*)wid;
-    if (SDL_PointInRect(pos, &v->v.rect)) {
+    if (SDL_PointInRect(&d->point, &v->v.rect)) {
         WAUDIO_PRINTF("\n clean reset");
         v->error_last = 0;
     }
@@ -132,8 +132,8 @@ static WidgetApi wAudioApi = {
     .redraw = wAudioRedraw,
     .process = wAudioProcess,
     .keyboard = 0,
-    .mouseMove = wAudioMouseMove,
-    .mouseClick = wAudioMouseClick,
+    .touchMove = wAudioMouseMove,
+    .touchClick = wAudioMouseClick,
     .mouseWheel = 0,
     .terminate = wAudioTerminate
 };

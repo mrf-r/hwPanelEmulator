@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include "mgl.h"
 
+// #define SCOPE_NOT_DOTS_BUT_LINES
+
 #define LCG_A 1103515245
 #define LCG_B 12345
 #define SCOPE_FADE_COEF 128 // less is faster
@@ -53,12 +55,29 @@ static inline void scopeXYframe(
 
     mgsWorkingArea(x, y, xs, ys);
     mgdFill(off);
+#ifdef SCOPE_NOT_DOTS_BUT_LINES
+    uint16_t py_prev = ((int32_t)(s->buf[0]) + 0x8000) * ys / 65536;
+    for (unsigned i = 0; i < SCOPE_X; i++) {
+        uint16_t px = (uint32_t)i * xs / SCOPE_X;
+        uint16_t py = ((int32_t)(s->buf[i]) + 0x8000) * ys / 65536;
+        if (py_prev > py) {
+            mgsWorkingArea(x + px, y + py, 1, py_prev - py);
+        } else if (py_prev < py) {
+            mgsWorkingArea(x + px, y + py_prev, 1, py - py_prev);
+        } else {
+            mgsWorkingArea(x + px, y + py, 1, 1);
+        }
+        mgdFill(on);
+        py_prev = py;
+    }
+#else
     for (unsigned i = 0; i < SCOPE_X; i++) {
         uint16_t px = (uint32_t)i * xs / SCOPE_X;
         uint16_t py = ((int32_t)(s->buf[i]) + 0x8000) * ys / 65536;
         mgsWorkingArea(x + px, y + py, 1, 1);
         mgdFill(on);
     }
+#endif
 }
 
 #endif // _SCOPE_XY_H

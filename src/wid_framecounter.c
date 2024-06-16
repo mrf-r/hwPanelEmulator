@@ -60,8 +60,8 @@ static WidgetApi wFrameCounterApi = {
     .redraw = wFrameCounterRedraw,
     .process = wFrameCounterProcess,
     .keyboard = 0,
-    .mouseMove = 0,
-    .mouseClick = 0, // wEncMouseClick, TODO: reset max ?
+    .touchMove = 0,
+    .touchClick = 0, // wEncMouseClick, TODO: reset max ?
     .mouseWheel = 0,
     .terminate = 0
 };
