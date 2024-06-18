@@ -7,11 +7,6 @@
 #define WEEPROM_PRINTF printf
 // #define WEEPROM_PRINTF(...)
 
-typedef enum {
-    BSP_OK = 0,
-    BSP_FAIL,
-} BspResult;
-
 #define EEPROM_HEADER_SIZE 256
 #define EEPROM_FILEID_SIZE 32
 #define EEPROM_NAME_SIZE 64
@@ -41,7 +36,15 @@ typedef union {
     };
 } EepromHeader;
 
-static void wEepromFillTime(EepromTime* t)
+__attribute__((unused)) static const GadgetEeprom* eeprom;
+
+void eepromSelect(const GadgetEeprom* const e)
+{
+    SDL_assert(e);
+    eeprom = e;
+}
+
+static void eepromFillTime(EepromTime* t)
 {
     time_t ept;
     time(&ept);
@@ -54,92 +57,168 @@ static void wEepromFillTime(EepromTime* t)
     t->second = timenow->tm_sec;
 }
 
-static GadgetEeprom* eeprom;
-
-void eepromSelect(GadgetEeprom* e)
+static void eepromHeaderInit(EepromHeader* h)
 {
-    SDL_assert(e);
-    eeprom = e;
+    SDL_memset(h->array, 0x0, EEPROM_HEADER_SIZE);
+    SDL_strlcpy(h->file_id, EEPROM_FILEID, EEPROM_FILEID_SIZE);
+    SDL_strlcpy(h->name, eeprom->name, EEPROM_NAME_SIZE);
+    h->data_size = eeprom->size;
+    h->header_size = EEPROM_HEADER_SIZE;
 }
 
-BspResult eepromRead(uint32_t address, uint8_t* dest, uint32_t length)
+static BspResult eepromCreateNew()
 {
     BspResult result = BSP_OK;
-    EepromHeader header;
-    SDL_memset(header.array, 0x0, EEPROM_HEADER_SIZE);
-    SDL_strlcpy(header.file_id, EEPROM_FILEID, EEPROM_FILEID_SIZE);
-    SDL_strlcpy(header.name, eeprom->name, EEPROM_NAME_SIZE);
-    header.data_size = eeprom->size;
-    header.header_size = EEPROM_HEADER_SIZE;
-    // file check
-    SDL_RWops* fops = SDL_RWFromFile(eeprom->filepath, "rb");
+    WEEPROM_PRINTF("\nFile create attempt");
+    SDL_RWops* fops = SDL_RWFromFile(eeprom->filepath, "w+b");
     if (NULL == fops) {
-        WEEPROM_PRINTF("\nSDL_RWFromFile(read): %s", SDL_GetError());
-        WEEPROM_PRINTF("\nFile create attempt");
-        fops = SDL_RWFromFile(eeprom->filepath, "w+b");
-        if (NULL == fops) {
-            WEEPROM_PRINTF("\nSDL_RWFromFile(create): %s", SDL_GetError());
-            result = BSP_FAIL;
-        } else {
-            // write header
-            wEepromFillTime(&header.created);
-            header.created.dummy = 'C';
-            if (1 != SDL_RWwrite(fops, header.array, EEPROM_HEADER_SIZE, 1)) {
-                WEEPROM_PRINTF("\nSDL_RWwrite(header): %s", SDL_GetError());
-                result = BSP_FAIL;
-            }
-            // write init data
-            for (unsigned i = 0; i < eeprom->size; i++) {
-                static const uint8_t init_data = 0xFF;
-                if (1 != SDL_RWwrite(fops, &init_data, 1, 1)) {
-                    result = BSP_FAIL;
-                }
-            }
-        }
+        WEEPROM_PRINTF("\nSDL_RWFromFile(create): %s", SDL_GetError());
+        result = BSP_FAIL;
     } else {
-        // check header match
-        EepromHeader hread;
-        if (1 != SDL_RWread(fops, hread.array, EEPROM_HEADER_SIZE, 1)) {
-            WEEPROM_PRINTF("\nSDL_RWread(header): %s", SDL_GetError());
+        // write header
+        EepromHeader header;
+        eepromHeaderInit(&header);
+        eepromFillTime(&header.created);
+        header.created.dummy = 'C';
+        if (1 != SDL_RWwrite(fops, header.array, EEPROM_HEADER_SIZE, 1)) {
+            WEEPROM_PRINTF("\nSDL_RWwrite(header): %s", SDL_GetError());
             result = BSP_FAIL;
         }
-        unsigned cmp_len = EEPROM_FILEID_SIZE + EEPROM_NAME_SIZE + 4 + 4;
-        if (SDL_memcmp(header.array, hread.array, cmp_len)) {
-            WEEPROM_PRINTF("\nHeader mismatch!");
-            result = BSP_FAIL;
-        }
-        int64_t fend = SDL_RWseek(fops, 0, RW_SEEK_END);
-        if (fend < 0) {
-            WEEPROM_PRINTF("\nSDL_RWseek(end): %s", SDL_GetError());
-            result = BSP_FAIL;
-        } else {
-            if ((eeprom->size + EEPROM_HEADER_SIZE) != fend) {
-                WEEPROM_PRINTF("\nSize mismatch: %d", (int)fend);
+        // write init data
+        for (unsigned i = 0; i < eeprom->size; i++) {
+            static const uint8_t init_data = 0xFF;
+            if (1 != SDL_RWwrite(fops, &init_data, 1, 1)) {
                 result = BSP_FAIL;
-            } else {
-                WEEPROM_PRINTF("\nEEPROM file is OK!");
             }
         }
-    }
-    // actual read
-    if (0 > SDL_RWseek(fops, EEPROM_HEADER_SIZE + address, RW_SEEK_SET)) {
-        WEEPROM_PRINTF("\nSDL_RWseek(start): %s", SDL_GetError());
-        result = BSP_FAIL;
-    }
-    if (1 != SDL_RWread(fops, dest, length, 1)) {
-        WEEPROM_PRINTF("\nSDL_RWread(data): %s", SDL_GetError());
-        result = BSP_FAIL;
     }
     if (SDL_RWclose(fops)) {
-        WEEPROM_PRINTF("\nSDL_RWclose: %s", SDL_GetError());
+        WEEPROM_PRINTF("\nSDL_RWclose(create): %s", SDL_GetError());
     }
     return result;
 }
 
-BspResult eepromWrite(uint32_t address, uint8_t* dest, uint32_t length)
+static BspResult eepromCheckValidity(SDL_RWops* fops)
 {
-    // open
-    // write
-    // close
-    // time()
+    BspResult result = BSP_OK;
+    EepromHeader header;
+    eepromHeaderInit(&header);
+    EepromHeader hread;
+    if (1 != SDL_RWread(fops, hread.array, EEPROM_HEADER_SIZE, 1)) {
+        WEEPROM_PRINTF("\nSDL_RWread(hcheck): %s", SDL_GetError());
+        result = BSP_FAIL;
+    }
+    unsigned cmp_len = EEPROM_FILEID_SIZE + EEPROM_NAME_SIZE + 4 + 4;
+    if (SDL_memcmp(header.array, hread.array, cmp_len)) {
+        WEEPROM_PRINTF("\nHeader mismatch!");
+        // TODO: messagebox
+        result = BSP_FAIL;
+    }
+    int64_t fend = SDL_RWseek(fops, 0, RW_SEEK_END);
+    if (fend < 0) {
+        WEEPROM_PRINTF("\nSDL_RWseek(end): %s", SDL_GetError());
+        result = BSP_FAIL;
+    } else {
+        if ((eeprom->size + EEPROM_HEADER_SIZE) != fend) {
+            WEEPROM_PRINTF("\nSize mismatch: %d", (int)fend);
+            // TODO: messagebox
+            result = BSP_FAIL;
+        } else {
+            WEEPROM_PRINTF("\nEEPROM file is OK!");
+        }
+    }
+    return result;
+}
+
+static BspResult eepromFileCheck()
+{
+    BspResult result = BSP_OK;
+    // file check
+    SDL_RWops* fops = SDL_RWFromFile(eeprom->filepath, "rb");
+    if (NULL == fops) {
+        WEEPROM_PRINTF("\nSDL_RWFromFile(fcheck): %s", SDL_GetError());
+        if (BSP_OK != eepromCreateNew()) {
+            result = BSP_FAIL;
+        }
+        fops = SDL_RWFromFile(eeprom->filepath, "rb");
+    } else {
+        // check header match
+        if (BSP_OK != eepromCheckValidity(fops)) {
+            result = BSP_FAIL;
+        }
+    }
+    if (SDL_RWclose(fops)) {
+        WEEPROM_PRINTF("\nSDL_RWclose(fcheck): %s", SDL_GetError());
+    }
+    return result;
+}
+
+BspResult eepromRead(uint32_t address, uint8_t* dest, uint32_t length)
+{
+    SDL_assert(eeprom);
+    BspResult result = BSP_OK;
+    if (BSP_OK != eepromFileCheck()) {
+        return BSP_FAIL;
+    }
+
+    SDL_RWops* fops = SDL_RWFromFile(eeprom->filepath, "rb");
+    if (NULL == fops) {
+        WEEPROM_PRINTF("\nSDL_RWFromFile(read): %s", SDL_GetError());
+        result = BSP_FAIL;
+    }
+    if (0 > SDL_RWseek(fops, EEPROM_HEADER_SIZE + address, RW_SEEK_SET)) {
+        WEEPROM_PRINTF("\nSDL_RWseek(read): %s", SDL_GetError());
+        result = BSP_FAIL;
+    }
+    if (1 != SDL_RWread(fops, dest, length, 1)) {
+        WEEPROM_PRINTF("\nSDL_RWread(read): %s", SDL_GetError());
+        result = BSP_FAIL;
+    }
+    if (SDL_RWclose(fops)) {
+        WEEPROM_PRINTF("\nSDL_RWclose(read): %s", SDL_GetError());
+    }
+    return result;
+}
+
+BspResult eepromWrite(uint32_t address, uint8_t* data, uint32_t length)
+{
+    SDL_assert(eeprom);
+    BspResult result = BSP_OK;
+    if (BSP_OK != eepromFileCheck()) {
+        return BSP_FAIL;
+    }
+
+    SDL_RWops* fops = SDL_RWFromFile(eeprom->filepath, "r+b");
+    if (NULL == fops) {
+        WEEPROM_PRINTF("\nSDL_RWFromFile(write): %s", SDL_GetError());
+        result = BSP_FAIL;
+    }
+    EepromHeader header;
+    if (1 != SDL_RWread(fops, header.array, EEPROM_HEADER_SIZE, 1)) {
+        WEEPROM_PRINTF("\nSDL_RWread(w header): %s", SDL_GetError());
+        result = BSP_FAIL;
+    }
+    eepromFillTime(&header.modified);
+    header.modified.dummy = 'E';
+    header.write_count++;
+    if (0 > SDL_RWseek(fops, 0, RW_SEEK_SET)) {
+        WEEPROM_PRINTF("\nSDL_RWseek(w header): %s", SDL_GetError());
+        result = BSP_FAIL;
+    }
+    if (1 != SDL_RWwrite(fops, header.array, EEPROM_HEADER_SIZE, 1)) {
+        WEEPROM_PRINTF("\nSDL_RWwrite(w header): %s", SDL_GetError());
+        result = BSP_FAIL;
+    }
+    if (0 > SDL_RWseek(fops, EEPROM_HEADER_SIZE + address, RW_SEEK_SET)) {
+        WEEPROM_PRINTF("\nSDL_RWseek(w data): %s", SDL_GetError());
+        result = BSP_FAIL;
+    }
+    if (1 != SDL_RWwrite(fops, data, length, 1)) {
+        WEEPROM_PRINTF("\nSDL_RWwrite(w data): %s", SDL_GetError());
+        result = BSP_FAIL;
+    }
+    if (SDL_RWclose(fops)) {
+        WEEPROM_PRINTF("\nSDL_RWclose(read): %s", SDL_GetError());
+    }
+    return result;
 }

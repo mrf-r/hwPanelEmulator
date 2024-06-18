@@ -6,8 +6,8 @@
 #define WAUDIO_PRINTF printf
 // #define WAUDIO_PRINTF(...)
 
-static unsigned portaudio_requests = 0;
-static PaError portaudio_status;
+__attribute__((unused)) static unsigned portaudio_requests = 0;
+__attribute__((unused)) static PaError portaudio_status;
 
 static void portaudioInitGlobal()
 {

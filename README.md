@@ -25,7 +25,7 @@ All widgets generates events in form of midi messages. You can differentiate the
     - For both midi and serial devices flow limiter value should be specified (virtual baud). You are free to experiment with different rates. For example, if you are using some old synths, you can lower the baud from 31250 to 10000 or even less. Minimal virtual baud is 10 bits per second.
 Should be compatible with Arduino MIDI over serial.
 - audio - based on portaudio library. In case you want to experiment with synthesis. It can be initialized with NULL instead of device names to select default devices. Portaudio callback for each audio connection should be created using `WID_AUDIO_CALLBACK_DEFINE` macro. When creating it, you need to specify the name of the callback to be created, which will be used when creating the widget, as well as the block handling method it will call. At the moment the call is made from portaudio library, so all thread safety is on you. I am thinking about calling it from widget process, but it will cause additional latency.
-
+- eeprom - not a widget, just bsp read and write methods, which is about the same as what you probably get on hw. You may have multiple chips, so make sure you select the one with `void eepromSelect(const GadgetEeprom* const e)` before calling read or write. **!! The file name must not contain folders !!**
 
 ## future widgets
 - file - in case you want to experiment with patches or audio samples
@@ -43,14 +43,13 @@ All interactions are done via MIDI events. Each event has a 4-bit `cn` field (ca
 
 # TODO:
 - primary:
-    - makefile to split build process? and to allow multiple files for user panel.
+    - makefile to split build process
         - integration process with instruction
     - COORDINATES AND SCALES ARE MESS
 - secondary
     - does audio work in a systems with no input(output) devices?
     - performance analysis (?)
     - filesystem integration (?)
-    - eeprom emulation
     - encoder press (if distance < thrsh on mouse release)?
     - multiple keyboard keys for one element
     - additional configs load (midi ports and audio selection, color scheme, size/scale?)
@@ -62,3 +61,4 @@ All interactions are done via MIDI events. Each event has a 4-bit `cn` field (ca
     - audio SRC for weird samplerates (arbitraty between 10k and 384k)
     - cmake?
     - SDL_WaitEvent without vsync? for variable framerate and mainloop rate
+    - eeprom file in folder?

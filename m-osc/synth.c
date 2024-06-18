@@ -2,6 +2,9 @@
 #include "synth.h"
 #include "vco.h"
 #include "sinc.h"
+#include "panel.h"
+
+void panelHandleMidi(MidiMessageT m);
 
 #define SYNTH_ASSERT SDL_assert
 #define SAMPLE_RATE_MULT 4
@@ -29,6 +32,54 @@ const SynthParameter parameter_table[] = {
 #define SYNTH_FIRST_CC 0x10
 #define SYNTH_PARAMETERS_COUNT (sizeof(parameter_table) / sizeof(SynthParameter))
 
+static const uint16_t synth_patch_default[SYNTH_PARAMETERS_COUNT] = {
+    0x1000, // "O1Pitch"
+    0x0000, // "O1Octave"
+    0x2000, // "O1Amp"
+    0x0000, // "O2Phase"
+    0x0000, // "O2Pitch"
+    0x3FFF // "O2Sync"
+};
+
+#define EEPROM_SYNTHPATCH_OFFSET 0
+
+void synthLoadPatch()
+{
+    uint16_t synth_patch[SYNTH_PARAMETERS_COUNT];
+    BspResult res = eepromRead(EEPROM_SYNTHPATCH_OFFSET, (uint8_t*)synth_patch, sizeof(synth_patch));
+    MidiMessageT m = {
+        .cn = ~MIDI_CN_LOCALPANEL, // anything but localpanel. TODO: make it more clear
+        .cin = MIDI_CIN_CONTROLCHANGE,
+        .miditype = MIDI_CIN_CONTROLCHANGE,
+        .midichannel = 0
+    };
+    for (unsigned i = 0; i < SYNTH_PARAMETERS_COUNT; i++) {
+        uint16_t value;
+        if ((BSP_OK == res) && (synth_patch[i] < 0x4000)) {
+            value = synth_patch[i];
+        } else {
+            value = synth_patch_default[i];
+        }
+        *parameter_table[i].parameter = value;
+        // TODO: synth should know CC map as well
+        m.byte2 = 0x10 + i;
+        m.byte3 = (value >> 7) & 0x7F;
+        panelHandleMidi(m);
+        m.byte2 = 0x10 + 0x20 + i;
+        m.byte3 = value & 0x7F;
+        panelHandleMidi(m);
+    }
+}
+
+void synthSavePatch()
+{
+    uint16_t synth_patch[SYNTH_PARAMETERS_COUNT];
+    for (unsigned i = 0; i < SYNTH_PARAMETERS_COUNT; i++) {
+        synth_patch[i] = *parameter_table[i].parameter;
+    }
+    eepromWrite(EEPROM_SYNTHPATCH_OFFSET, (uint8_t*)synth_patch, sizeof(synth_patch));
+}
+
 void synthHandleMidi(MidiMessageT m)
 {
     if (MIDI_CIN_CONTROLCHANGE == m.cin) {
@@ -54,6 +105,7 @@ void synthHandleMidi(MidiMessageT m)
     } else if (MIDI_CIN_NOTEON == m.cin) {
         if (0 == m.byte2) {
             // synth.calibration_request = 1;
+            synthSavePatch();
         } else {
             if (gate)
                 gate = 0;
@@ -70,6 +122,7 @@ void synthHandleMidi(MidiMessageT m)
 void synthInit()
 {
     sincInitCoefficients(&filter, 1.f / ((float)SAMPLE_RATE_MULT * 2.f * 1.25f));
+    synthLoadPatch();
 }
 
 static inline int16_t audioProcessOneSample(VcoControlBlock* const vcb)

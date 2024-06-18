@@ -343,11 +343,10 @@ int main(int argc, char* argv[])
                 break;
             case SDL_WINDOWEVENT:
                 break;
-
-            default: {
-                static int counter = 0;
-                printf("\n event %08X, %08X", event.type, counter++);
-            } break;
+            // default: {
+            //     static int counter = 0;
+            //     DEBUG_PRINTF("\n event %08X, %08X", event.type, counter++);
+            // } break;
             } // switch event
         } // event received
     }
