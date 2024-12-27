@@ -2,7 +2,7 @@
 #define __WID_AUDIO_H
 
 #include "widget.h"
-#include "portaudio.h"
+#include <portaudio.h>
 
 #define VIDAUDIO_NAMELENGTH 32
 

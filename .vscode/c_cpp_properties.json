@@ -7,7 +7,7 @@
                 "${workspaceFolder}/libs/minimalgraphics",
                 "${workspaceFolder}/libs/mbwmidi",
                 "C:/msys64/mingw64/include",
-                "C:/msys64/mingw64/include/SDL2",
+                "C:/msys64/mingw64/include/SDL2"
             ],
             "intelliSenseMode": "windows-gcc-x64",
             "compilerPath": "C:/msys64/mingw64/bin/g++.exe",

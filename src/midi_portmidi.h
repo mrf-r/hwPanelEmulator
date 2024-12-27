@@ -1,13 +1,20 @@
 #ifndef _MIDI_PORTMIDI_H
 #define _MIDI_PORTMIDI_H
 
-#include "wid_midi.h"
-#include "portmidi.h"
 #include "mbwmidi.h"
+#include "wid_midi.h"
+#include <SDL.h>
+#include <portmidi.h>
 
 #ifndef WMIDI_PRINTF
 #define WMIDI_PRINTF(...)
 #endif
+
+static int wmpmTime(void* time_info)
+{
+    (void)time_info;
+    return SDL_GetTicks();
+}
 
 static void wmpmStart(WidgetMidi* v)
 {
@@ -27,7 +34,7 @@ static void wmpmStart(WidgetMidi* v)
 
             if ((VMIDI_NOTFOUND == v->status_in) && (device_info->input)) {
                 if (SDL_strstr(device_info->name, v->name_in)) {
-                    if (0 == Pm_OpenInput((PortMidiStream**)&v->inst_input, dev, NULL, 256, NULL, NULL)) {
+                    if (0 == Pm_OpenInput((PortMidiStream**)&v->inst_input, dev, NULL, 256, wmpmTime, NULL)) {
                         v->status_in = VMIDI_ACTIVE_PM;
                         SDL_strlcpy(v->name_in, device_info->name, VIDMIDI_NAMELENGTH - 2);
                         WMIDI_PRINTF("\n opened in: %d - %s", dev, device_info->name);
@@ -38,7 +45,7 @@ static void wmpmStart(WidgetMidi* v)
                 }
             } else if ((VMIDI_NOTFOUND == v->status_out) && (device_info->output)) {
                 if (SDL_strstr(device_info->name, v->name_out)) {
-                    if (0 == Pm_OpenOutput((PortMidiStream**)&v->inst_output, dev, NULL, 256, NULL, NULL, 0)) {
+                    if (0 == Pm_OpenOutput((PortMidiStream**)&v->inst_output, dev, NULL, 256, wmpmTime, NULL, 0)) {
                         v->status_out = VMIDI_ACTIVE_PM;
                         SDL_strlcpy(v->name_out, device_info->name, VIDMIDI_NAMELENGTH - 2);
                         WMIDI_PRINTF("\n opened out: %d - %s", dev, device_info->name);

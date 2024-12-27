@@ -3,5 +3,15 @@
     "files.associations": {
         "*.h": "cpp",
     },
+    "files.exclude": {
+        "libs/mbwmidi/tests": true,
+
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "**/Thumbs.db": true
+    },
     "C_Cpp.default.compilerPath": "c:\\msys64\\usr\\bin\\c++.exe"
 }

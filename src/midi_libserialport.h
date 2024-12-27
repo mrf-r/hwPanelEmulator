@@ -2,7 +2,7 @@
 #define _MIDI_LIBSERIALPORT_H
 
 #include "wid_midi.h"
-#include "libserialport.h"
+#include <libserialport.h>
 #include "mbwmidi.h"
 
 #ifndef WMIDI_PRINTF

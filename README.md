@@ -43,6 +43,8 @@ All interactions are done via MIDI events. Each event has a 4-bit `cn` field (ca
 
 # TODO:
 - primary:
+    - portaudio watchdog for restarting on critical drops.
+        - Reaktor-like switch?
     - makefile to split build process
         - integration process with instruction
     - COORDINATES AND SCALES ARE MESS

@@ -1,6 +1,6 @@
 #include "wid_audio.h"
 #include "wid_graphics.h"
-#include "portaudio.h"
+#include <portaudio.h>
 
 #include "stdio.h"
 #define WAUDIO_PRINTF printf
