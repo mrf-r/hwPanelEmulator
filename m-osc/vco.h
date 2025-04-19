@@ -62,7 +62,7 @@ static inline void oscIncGet(uint16_t pitch, int32_t* inc, int32_t* recp)
     *inc = v0 + diff * spos / CELL_STEPS;
 }
 
-static inline int32_t pd(uint32_t inc, int32_t noise16)
+static inline int32_t phaseNoise(uint32_t inc, int32_t noise16)
 {
     return (inc / 32768) * noise16;
 }
@@ -82,15 +82,18 @@ static inline int16_t vcoProcessSample(
     VcoControlBlock* const ctrl,
     VcoCore* const vco)
 {
+    // noise calculation
     int32_t lcg = vco->lcg;
     lcg = lcg * 1103515245 + 12345;
     vco->lcg = lcg;
     int32_t lcg16 = lcg / 65536;
+    // core generator raw
     int32_t gen1new = vco->gen1 + ctrl->base_inc;
     vco->out_phase = gen1new / 65536;
-    int32_t gen1p1 = gen1new * ctrl->o1_p1mul + pd(ctrl->o1_p1inc, lcg16);
-    int32_t gen1p2 = gen1new * ctrl->o1_p2mul + pd(ctrl->o1_p2inc, lcg16);
-    // x-fade
+    // core generator octave with octaves and noise
+    int32_t gen1p1 = gen1new * ctrl->o1_p1mul + phaseNoise(ctrl->o1_p1inc, lcg16);
+    int32_t gen1p2 = gen1new * ctrl->o1_p2mul + phaseNoise(ctrl->o1_p2inc, lcg16);
+    // x-fade core generator octaves
     int32_t gen1o = gen1p1 / (65536 / GEN1_OCTAVES) * ctrl->o1_p1amp
         + gen1p2 / (65536 / GEN1_OCTAVES) * ctrl->o1_p2amp;
     gen1o /= 65536;
@@ -107,7 +110,7 @@ static inline int16_t vcoProcessSample(
         gen2new = vco->gen2 + ctrl->o2_inc;
     }
     vco->phase2_acc -= ctrl->o2_phase_inc;
-    int32_t gen2o = gen2new + pd(gen2new - vco->gen2, lcg16) + vco->phase2_acc;
+    int32_t gen2o = gen2new + phaseNoise(gen2new - vco->gen2, lcg16) + vco->phase2_acc;
     gen2o /= 65536;
     vco->gen1 = gen1new; // we need to keep previous value of vco->gen1 until now
     vco->gen2 = gen2new;

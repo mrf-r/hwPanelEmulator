@@ -66,16 +66,16 @@ void panelConstruct(SDL_Renderer* rend)
 
     for (; pot < 4; pot++) {
         wPotInit(&pots[pot], pdef[pot], pot + POT_FIRST_CC_NUM, x, y, rend);
-        potThresholdSet(&pots[pot].potdata, 2);
-        potLockJump(&pots[pot].potdata);
+        potMidiThresholdSet(&pots[pot].potdata, 2);
+        potLockOnCurrentValue(&pots[pot].potdata);
         x += PAN_BUT_INC;
     }
     y += PAN_BUT_INC;
     x = xinit;
     for (; pot < POTS_COUNT; pot++) {
         wPotInit(&pots[pot], pdef[pot], pot + POT_FIRST_CC_NUM, x, y, rend);
-        potThresholdSet(&pots[pot].potdata, 2);
-        potLockJump(&pots[pot].potdata);
+        potMidiThresholdSet(&pots[pot].potdata, 2);
+        potLockOnCurrentValue(&pots[pot].potdata);
         x += PAN_BUT_INC;
     }
     uint16_t but = 0;
@@ -95,7 +95,7 @@ void panelConstruct(SDL_Renderer* rend)
 
     synthInit();
     wAudioInit(&waudio, 120, 0, rend, 0, 0, 48000, 32, paCallback);
-    printf("\n state: %d, c: %d, l: %d", pots[0].potdata.state, pots[0].potdata.current, pots[0].potdata.locked);
+    printf("\n state: %d, c: %d, l: %d", pots[0].potdata.state, potGetPhysicalPosition(&pots[0].potdata), potGetValue(&pots[0].potdata));
 }
 
 void panelHandleMidi(MidiMessageT m)
@@ -104,14 +104,10 @@ void panelHandleMidi(MidiMessageT m)
         // update local panel from external midi controller
         if (MIDI_CIN_CONTROLCHANGE == m.cin) {
             if ((POT_FIRST_CC_NUM <= m.byte2) && (m.byte2 < POT_FIRST_CC_NUM + POTS_COUNT)) {
-                uint16_t old_val = pots[m.byte2 - POT_FIRST_CC_NUM].potdata.locked;
-                uint16_t new_val = parameterReceiveMsb(old_val, m.byte3);
-                potLockFetch(&pots[m.byte2 - POT_FIRST_CC_NUM].potdata, new_val);
+                potReceiveMsb(&pots[m.byte2 - POT_FIRST_CC_NUM].potdata, m.byte3);
             }
             if ((POT_FIRST_CC_NUM + 0x20 <= m.byte2) && (m.byte2 < POT_FIRST_CC_NUM + 0x20 + POTS_COUNT)) {
-                uint16_t old_val = pots[m.byte2 - (POT_FIRST_CC_NUM + 0x20)].potdata.locked;
-                uint16_t new_val = parameterReceiveLsb(old_val, m.byte3);
-                potLockFetch(&pots[m.byte2 - (POT_FIRST_CC_NUM + 0x20)].potdata, new_val);
+                potReceiveLsb(&pots[m.byte2 - (POT_FIRST_CC_NUM + 0x20)].potdata, m.byte3);
             }
         } else if (MIDI_CIN_NOTEON == m.cin) {
             if (m.byte2 == 0) {

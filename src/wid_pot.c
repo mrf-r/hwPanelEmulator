@@ -1,6 +1,6 @@
 #include "wid_pot.h"
-#include "wid_graphics.h"
 #include "mbwmidi.h"
+#include "wid_graphics.h"
 
 #ifndef POT_CTRL_MULT
 #define POT_CTRL_MULT 12
@@ -10,7 +10,7 @@
 
 #define POT_PERIOD_CLK_CYCLES 1 // 1ms = 1kHz
 #define POT_BITS_ADC 10 // <16
-#define POT_BITS_CLEAN 7 // <POT_BITS_ADC
+#define POT_BITS_CLEAN (POT_BITS_ADC - 2) // <POT_BITS_ADC
 #if (POT_BITS_ADC >= 14) || (POT_BITS_CLEAN > POT_BITS_ADC)
 #error "too high adc resolution"
 #endif
@@ -30,7 +30,7 @@ static void wPotRedraw(void* wid)
     uint16_t d = v->v.surface->w;
     drawCircle(&v->v, 9, color);
     { // draw lock notch
-        float value = (float)v->potdata.locked * (-1 / (128.f * 128.f));
+        float value = (float)potGetValue(&v->potdata) * (-1 / (128.f * 128.f));
         float angle = value * (PI_F * 1.5f) - PI_F * 0.25f;
         float x = SDL_sinf(angle);
         float y = SDL_cosf(angle);
@@ -41,7 +41,7 @@ static void wPotRedraw(void* wid)
         drawLine(&v->v, xs, ys, xe, ye, d, panel.widget_color_helptext);
     }
     { // draw actual notch
-        float value = (float)v->potdata.current * (-1 / (128.f * 128.f));
+        float value = (float)potGetPhysicalPosition(&v->potdata) * (-1 / (128.f * 128.f));
         float angle = value * (PI_F * 1.5f) - PI_F * 0.25f;
         float x = SDL_sinf(angle);
         float y = SDL_cosf(angle);
@@ -52,7 +52,7 @@ static void wPotRedraw(void* wid)
         drawLine(&v->v, xs, ys, xe, ye, d, color);
     }
     drawStringCentered(&v->v, d / 2, d / 2 - 4, v->name, color);
-    drawU16Centered(&v->v, d / 2, d - 9, v->potdata.locked, panel.widget_color_helptext);
+    drawU16Centered(&v->v, d / 2, d - 9, potGetValue(&v->potdata), panel.widget_color_helptext);
 }
 static void wPotProcess(void* wid, uint32_t clock)
 {
@@ -67,32 +67,31 @@ static void wPotProcess(void* wid, uint32_t clock)
         int32_t noise_emu = widgetRandom();
         // true value
         int32_t adc = v->analog_src14b;
-        if (adc > adc_max) {
-            adc = adc_max;
-        }
         // emulated hw + ADC noise
-        adc += noise_emu / (1 << (31 - (POT_BITS_ADC - POT_BITS_CLEAN)));
-        if (adc < 0) {
-            adc = 0;
-        } else if (adc > POT_MAX) {
-            adc = POT_MAX;
+        noise_emu /= (1 << (31 - (14 - POT_BITS_CLEAN)));
+        int32_t thr = 1 << (14 - POT_BITS_CLEAN);
+        if (adc < thr) {
+            noise_emu = noise_emu * adc / thr;
+        } else if (adc > (POT_MAX - thr)) {
+            noise_emu = noise_emu * (POT_MAX - adc) / thr;
         }
+        adc += noise_emu;
         // adc value
         adc = adc >> (14 - POT_BITS_ADC);
         // bringin them back)
-        pot = potFilter(&v->filter, adc, noise_flt, POT_BITS_ADC);
+        pot = potFilterCompensated(&v->filter, adc, noise_flt, POT_BITS_ADC);
     }
     MidiMessageT m;
     m.cn = MIDI_CN_LOCALPANEL;
     m.cin = m.miditype = MIDI_CIN_CONTROLCHANGE;
     m.byte2 = v->midictrl;
-    if (pot != v->potdata.current) {
+    if (pot != potGetPhysicalPosition(&v->potdata)) {
         v->v.need_redraw = 1;
     }
-    potProcess(&v->potdata, m, pot);
-    if (v->potdata.locked != v->prev_lock) {
+    potProcessLocalValueWithMidiSend(&v->potdata, m, pot);
+    if (potGetValue(&v->potdata) != v->prev_lock) {
         v->v.need_redraw = 1;
-        v->prev_lock = v->potdata.locked;
+        v->prev_lock = potGetValue(&v->potdata);
     }
 }
 
@@ -167,8 +166,7 @@ void wPotInit(
     widgetInit(&v->v, (void*)v, &wPotApi, x, y, panel.widget_unit_size, panel.widget_unit_size, panel.widget_scale, rend);
     v->name = name;
     v->midictrl = midictrl;
-    v->potdata.state = POT_STATE_NORMAL;
-    v->potdata.locked = v->potdata.current = v->potdata.threshold = 0;
+    potInit(&v->potdata, 0, 0); // TODO: set initial from eeprom load
     v->pointed = 0;
     v->analog_src14b = 0;
     v->filter = 0;

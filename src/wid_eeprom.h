@@ -2,7 +2,7 @@
 #define __WID_EEPROM_H
 
 #include <stdint.h>
-#include "SDL.h"
+#include <SDL.h>
 
 typedef enum {
     BSP_OK = 0,

@@ -1,9 +1,8 @@
 
 #include "wid_eeprom.h"
-#include "SDL.h"
-// #include "file"
-#include "stdio.h"
-#include "time.h"
+#include <SDL.h>
+#include <stdio.h>
+#include <time.h>
 #define WEEPROM_PRINTF printf
 // #define WEEPROM_PRINTF(...)
 

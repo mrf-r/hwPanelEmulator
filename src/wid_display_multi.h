@@ -38,11 +38,11 @@ typedef struct {
     static void inst_name##_PixelOut(MglColor c)                                                                              \
     {                                                                                                                         \
         inst_name.lcg = inst_name.lcg * 1103515245 + 12345;                                                                   \
-        int32_t red = c.red + ((inst_name.lcg >> 22) & 0x7);                                                                  \
+        int32_t red = c.red + ((inst_name.lcg >> 20) & 0x7);                                                                  \
         c.red = (red < 255 ? red : 255) & 0xF8;                                                                               \
         int32_t green = c.green + ((inst_name.lcg >> 23) & 0x7);                                                              \
         c.green = (green < 255 ? green : 255) & 0xFC;                                                                         \
-        int32_t blue = c.blue + ((inst_name.lcg >> 21) & 0x7);                                                                \
+        int32_t blue = c.blue + ((inst_name.lcg >> 17) & 0x7);                                                                \
         c.blue = (blue < 255 ? blue : 255) & 0xF8;                                                                            \
         uint32_t* framebuffer = (uint32_t*)inst_name.v.surface->pixels;                                                       \
         framebuffer[(inst_name.y + 1) * (w + 2) + inst_name.x + 1] = c.wrd | 0xFF000000;                                      \

@@ -63,4 +63,3 @@ All interactions are done via MIDI events. Each event has a 4-bit `cn` field (ca
     - audio SRC for weird samplerates (arbitraty between 10k and 384k)
     - cmake?
     - SDL_WaitEvent without vsync? for variable framerate and mainloop rate
-    - eeprom file in folder?
