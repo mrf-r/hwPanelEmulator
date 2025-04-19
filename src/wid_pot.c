@@ -59,10 +59,8 @@ static void wPotProcess(void* wid, uint32_t clock)
     WidgetPot* v = (WidgetPot*)wid;
     // TODO: overflow???
     uint16_t pot = 0;
-    uint32_t adc_max = 0x3FFF & (0xFFFF << (14 - POT_BITS_ADC));
     while ((int32_t)(v->prev_ms - clock) < 0) {
         v->prev_ms += POT_PERIOD_CLK_CYCLES;
-
         uint32_t noise_flt = widgetRandom();
         int32_t noise_emu = widgetRandom();
         // true value

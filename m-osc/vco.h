@@ -11,7 +11,6 @@ extern "C" {
 #define CALIB_OCTAVES_DISTANCE 2
 #define CALIB_OCTAVES_OFFSET 1
 #define GEN1_OCTAVES 4
-#define GEN2_MAX_OCTAVE_OFFSET 6
 #define GEN2_MAX_PHASE_SPEED_HZ 768
 
 typedef struct {
@@ -110,7 +109,7 @@ static inline int16_t vcoProcessSample(
         gen2new = vco->gen2 + ctrl->o2_inc;
     }
     vco->phase2_acc -= ctrl->o2_phase_inc;
-    int32_t gen2o = gen2new + phaseNoise(gen2new - vco->gen2, lcg16) + vco->phase2_acc;
+    int32_t gen2o = gen2new + phaseNoise(ctrl->o2_inc, lcg16) + vco->phase2_acc;
     gen2o /= 65536;
     vco->gen1 = gen1new; // we need to keep previous value of vco->gen1 until now
     vco->gen2 = gen2new;
@@ -122,13 +121,10 @@ static inline void vcoProcessBlock(
     VcoControlCv* const cv,
     VcoCore* const vco,
     VcoControlBlock* const ctrl
-    // int16_t* const buffer_out,
-    // const unsigned block_size
 )
 {
     uint16_t pitch = cv->ctrl_pitch << 2;
     const uint16_t octave = cv->ctrl_octave << 2;
-    const uint16_t pitch2 = cv->ctrl_2pitch << 2;
     const uint16_t sync = cv->ctrl_sync << 2;
     const uint16_t mix = cv->ctrl_mix << 2;
     const uint16_t phase2 = cv->ctrl_phase << 2;
@@ -153,21 +149,16 @@ static inline void vcoProcessBlock(
     ctrl->o1_p2amp = octave & (oct_fade_steps - 1);
     ctrl->o1_p1amp = oct_fade_steps - 1 - ctrl->o1_p2amp;
 
-    uint16_t p2 = (uint32_t)pitch2 * pitch2 / 65536;
-    ctrl->o2_inc = ctrl->base_inc + (ctrl->base_inc / (65536 / GEN2_MAX_OCTAVE_OFFSET)) * p2;
+    // pitch 2
+    uint16_t p2 = cv->ctrl_2pitch * cv->ctrl_2pitch / (128 * 128);
+    ctrl->o2_inc = ctrl->base_inc + (ctrl->base_inc / 256) * p2;
     ctrl->o2_sync = sync * sync / 65536;
 
-    const uint32_t max_phase_inc = (uint32_t)(FCF * GEN2_MAX_PHASE_SPEED_HZ + 0.5);
-    ctrl->o2_phase_inc = (max_phase_inc) / 65536 * exp2_fast(phase2);
+    const uint32_t max_phase_inc = (uint32_t)(FCF * GEN2_MAX_PHASE_SPEED_HZ);
+    ctrl->o2_phase_inc = (max_phase_inc) / 65536 * (exp2_fast(phase2) - 1);
 
     ctrl->o2_amp = -mix;
     ctrl->o1_amp = 65536 - 1 - mix;
-
-    // int16_t* __restrict out = buffer_out;
-    // const int16_t* out_end = buffer_out + block_size;
-    // for (; out_end > out; out += 1) {
-    //     out = vcoProcessSample(&ctrl, vco);
-    // }
 }
 
 #ifdef __cplusplus

@@ -133,7 +133,7 @@ static inline int16_t audioProcessOneSample(VcoControlBlock* const vcb)
         int16_t sample = vcoProcessSample(vcb, &vco);
         int16_t scope_pos = vco.out_phase;
         scopeXYsr(&scope, scope_pos, sample);
-        ret = sincProcessSample(&filter, (float)sample * 0.95f);
+        ret = sincProcessSample(&filter, (float)sample * 0.8f);
     }
     return (int16_t)ret;
 }
