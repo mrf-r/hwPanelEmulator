@@ -290,6 +290,7 @@ FRESULT f_readdir(DIR_WRAPPER* dp, FILINFO* fno) {
     
     if (fno) {
         strncpy(fno->fname, entry->d_name, sizeof(fno->fname) - 1);
+        fno->fname[sizeof(fno->fname) - 1] = '\0';
         
         /* Get file stats */
         char full_path[512];

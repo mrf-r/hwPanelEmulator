@@ -176,7 +176,8 @@ static inline void pmSyxOutCompose(WidgetMidi* v, uint8_t byte)
 static void wmpmProcessIn(WidgetMidi* v, uint32_t clock)
 {
     SDL_assert(VMIDI_ACTIVE_PM == v->status_in);
-
+    (void)clock;
+    
     PmEvent rx;
     // read all received messages
     while (1 == Pm_Read((PortMidiStream*)v->inst_input, &rx, 1)) {
@@ -188,6 +189,7 @@ static void wmpmProcessIn(WidgetMidi* v, uint32_t clock)
 static void wmpmProcessOut(WidgetMidi* v, const uint32_t clock, const uint32_t bytes_in_this_timeslot)
 {
     SDL_assert(VMIDI_ACTIVE_PM == v->status_in);
+    (void)clock;
     MidiMessageT m;
     uint32_t bytes_limit = bytes_in_this_timeslot;
     while ((bytes_limit) && (MIDI_RET_OK == midiPortReadNext(&midi_out_port, &m))) {

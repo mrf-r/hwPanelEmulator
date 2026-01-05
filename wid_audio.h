@@ -39,7 +39,7 @@ typedef struct {
         PaStreamCallbackFlags statusFlags,                                                   \
         void* userData)                                                                      \
     {                                                                                        \
-        /* TODO: do something with timeInfo? */                                              \
+        (void)timeInfo; /* TODO: do something with timeInfo? */                              \
         WidgetAudio* v = (WidgetAudio*)userData;                                             \
         if (statusFlags) {                                                                   \
             v->errorcounter++;                                                               \

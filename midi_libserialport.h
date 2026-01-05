@@ -141,6 +141,7 @@ static void wmlsStop(WidgetMidi* v)
 static void wmlsProcessIn(WidgetMidi* v, uint32_t clock)
 {
     SDL_assert(VMIDI_ACTIVE_SER == v->status_in);
+    (void)clock;
     midiInUartTap(&midi_uart_in_cx, MIDI_CN_USB_DEVICE);
     uint8_t read_buffer[WMLS_READ_BUFFER_SIZE];
     int result;
@@ -155,6 +156,7 @@ static void wmlsProcessIn(WidgetMidi* v, uint32_t clock)
 static void wmlsProcessOut(WidgetMidi* v, const uint32_t clock, const uint32_t bytes_in_this_timeslot)
 {
     SDL_assert(VMIDI_ACTIVE_SER == v->status_out);
+    (void)clock;
     midiOutUartTap(&midi_uart_out);
     // uart interrupt emulation
     for (unsigned i = 0; i < bytes_in_this_timeslot; i++) {

@@ -57,7 +57,7 @@ static void wButtonKeyboard(void* wid, SDL_Event* e)
 {
     WidgetButton* v = (WidgetButton*)wid;
     uint8_t pointed = v->pointed;
-    if (e->key.keysym.sym == v->keycode) {
+    if (e->key.keysym.sym == (SDL_Keycode)v->keycode) {
         if (e->type == SDL_KEYDOWN) {
             pointed |= BUT_SRC_KEYBD;
         } else if (e->type == SDL_KEYUP) {

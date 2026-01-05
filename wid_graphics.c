@@ -203,7 +203,7 @@ static const uint8_t fnt_6_width[] = {
 
 static inline uint16_t drawChar(uint32_t* fb, uint16_t xp, uint16_t yp, uint16_t w, uint16_t h, const char ch, const uint32_t color)
 {
-    char c = ch;
+    unsigned char c = ch;
     if ((c < 0x20) || (c > 0x7f))
         // return xp;
         c = 0x7f;

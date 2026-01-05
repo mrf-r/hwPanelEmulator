@@ -79,6 +79,7 @@ static void wAudioRedraw(void* wid)
 
 static void wAudioProcess(void* wid, uint32_t clock)
 {
+    (void)clock;
     WidgetAudio* v = (WidgetAudio*)wid;
     const uint16_t errorcounter = v->errorcounter;
     if (errorcounter != v->errorcounter_prev) {

@@ -148,6 +148,8 @@ static inline void widgetMouseWheelAll(SDL_Point* pos, int32_t delta)
 
 int main(int argc, char* argv[])
 {
+    (void)argc;
+    (void)argv;
     int ret = 0;
     ret = SDL_Init(SDL_INIT_TIMER | SDL_INIT_AUDIO | SDL_INIT_VIDEO | SDL_INIT_EVENTS);
     SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");

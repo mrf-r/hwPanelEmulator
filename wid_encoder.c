@@ -71,10 +71,10 @@ static void wEncKeyboard(void* wid, SDL_Event* e)
 {
     WidgetEnc* v = (WidgetEnc*)wid;
     if (e->type == SDL_KEYDOWN) {
-        if (e->key.keysym.sym == v->keycode_inc) {
+        if (e->key.keysym.sym == (SDL_Keycode)v->keycode_inc) {
             v->value_drag += ENCODER_SHIFT;
             v->v.need_redraw = 1;
-        } else if (e->key.keysym.sym == v->keycode_dec) {
+        } else if (e->key.keysym.sym == (SDL_Keycode)v->keycode_dec) {
             v->value_drag -= ENCODER_SHIFT;
             v->v.need_redraw = 1;
         }
