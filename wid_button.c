@@ -90,7 +90,6 @@ static void wButtonMouseMove(void* wid, WidgetTouchData* d, unsigned touch_eleme
 static void wButtonMouseClick(void* wid, WidgetTouchData* d)
 {
     WidgetButton* v = (WidgetButton*)wid;
-    (void)d;
     uint8_t pointed = v->pointed;
     if (SDL_PointInRect(&d->point, &v->v.rect)) {
         pointed |= BUT_SRC_MOUSE | BUT_SRC_POINTED;

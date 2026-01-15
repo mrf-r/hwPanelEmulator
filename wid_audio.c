@@ -122,7 +122,6 @@ static void wAudioMouseMove(void* wid, WidgetTouchData* d, unsigned touch_elemen
 }
 static void wAudioMouseClick(void* wid, WidgetTouchData* d)
 {
-    (void)d;
     WidgetAudio* v = (WidgetAudio*)wid;
     if (SDL_PointInRect(&d->point, &v->v.rect)) {
         WAUDIO_PRINTF("\n clean reset");
