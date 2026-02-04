@@ -15,6 +15,7 @@ extern "C" {
 #include "wid_midi.h"
 #include "wid_audio.h"
 #include "wid_eeprom.h"
+#include "wid_piano.h"
 
 #ifdef __cplusplus
 }

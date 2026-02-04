@@ -224,6 +224,7 @@ static inline uint16_t drawChar(uint32_t* fb, uint16_t xp, uint16_t yp, uint16_t
     }
     return xp += fnt_6_width[c - 0x20];
 }
+
 void drawString(Widget* v, uint16_t xp, uint16_t yp, const char* str, const uint32_t color)
 {
     uint16_t w = v->surface->w;
@@ -254,8 +255,13 @@ void drawU16Centered(Widget* v, uint16_t xp, uint16_t yp, uint16_t value, const 
     uint16_t h = v->surface->h;
     uint32_t* bmp = (uint32_t*)v->surface->pixels;
     const char toh[17] = "0123456789ABCDEF";
-    for (int i = 0; i < 4; i++) {
-        drawChar(bmp, xp + (1 - i) * 7, yp, w, h, toh[(value >> (i * 4)) & 0xF], color);
+    unsigned nz = 0;
+    for (int i = 3; i >= 0; i--) {
+        unsigned chv = (value >> (i * 4)) & 0xF;
+        if ((0 != nz) || (0 != chv) || (0 == i)) {
+            nz = 1;
+            drawChar(bmp, xp + (1 - i) * 7, yp, w, h, toh[chv], color);
+        }
     }
 }
 

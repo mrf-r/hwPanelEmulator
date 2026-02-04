@@ -23,18 +23,17 @@ Panel panel;
 
 static void panelInit()
 {
-    // TODO: put all this in conf file
     panel.list_start = 0;
     panel.list_end = 0;
     panel.widget_unit_size = PANEL_UNIT_SIZE;
     panel.widget_scale = PANEL_SCALE;
-    panel.widget_led_alpha = 0x80;
-    panel.widget_fill_alpha = 32;
-    panel.widget_color_panel = (125 << 16) | (127 << 8) | 108;
-    panel.widget_color_released = 0xFF000000; // normal outline
-    panel.widget_color_pointed = 0xFF38400A;
-    panel.widget_color_pressed = 0xFF900018; //
-    panel.widget_color_helptext = 0xFF483010; // values or keyboard keys info
+    panel.widget_led_alpha = PANEL_WIDGET_LED_ALPHA;
+    panel.widget_fill_alpha = PANEL_WIDGET_FILL_ALPHA;
+    panel.widget_color_panel = PANEL_COLOR;
+    panel.widget_color_released = PANEL_WIDGET_COLOR_RELEASED;
+    panel.widget_color_pointed = PANEL_WIDGET_COLOR_POINTED;
+    panel.widget_color_pressed = PANEL_WIDGET_COLOR_PRESSED;
+    panel.widget_color_helptext = PANEL_WIDGET_COLOR_HELPTEXT;
 }
 
 void widgetInit(
