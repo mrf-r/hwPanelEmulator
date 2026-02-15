@@ -2,6 +2,35 @@
 #include "widget.h"
 #include "panel_conf.h"
 
+#ifndef PANEL_COLOR
+#define PANEL_COLOR 0xFF7D7F6C
+#endif
+#ifndef PANEL_WIDGET_COLOR_RELEASED
+#define PANEL_WIDGET_COLOR_RELEASED 0xFF000000
+#endif
+#ifndef PANEL_WIDGET_COLOR_POINTED
+#define PANEL_WIDGET_COLOR_POINTED 0xFF38400A
+#endif
+#ifndef PANEL_WIDGET_COLOR_PRESSED
+#define PANEL_WIDGET_COLOR_PRESSED 0xFF900018
+#endif
+#ifndef PANEL_WIDGET_COLOR_HELPTEXT
+#define PANEL_WIDGET_COLOR_HELPTEXT 0xFF483010
+#endif
+#ifndef PANEL_WIDGET_FILL_ALPHA
+#define PANEL_WIDGET_FILL_ALPHA 0x20
+#endif
+#ifndef PANEL_WIDGET_LED_ALPHA
+#define PANEL_WIDGET_LED_ALPHA 0x80
+#endif
+#ifndef PANEL_SCALE
+#define PANEL_SCALE 2
+#endif
+#ifndef PANEL_UNIT_SIZE // is it dumb ???
+#define PANEL_UNIT_SIZE 46
+#endif
+
+
 // --- to be implemented by user
 void panelConstruct(SDL_Renderer* rend);
 void panelLoop(uint32_t clock);
