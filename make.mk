@@ -44,10 +44,10 @@ endif
 FLAGS_C_HWPANELEMU += $(FLAGS_C_HWPANELEMU_CONFIG)
 
 LINKER_FLAGS_HWPANELEMU := $(shell sdl2-config --libs)
+LINKER_FLAGS_HWPANELEMU += $(shell pkg-config $(LIBS_HWPANELEMU) --libs)
 ifeq ($(DEBUG), 1)
 LINKER_FLAGS_HWPANELEMU += -mconsole # part of --libs, uncomment it if printf console is needed
 endif
-LINKER_FLAGS_HWPANELEMU += $(shell pkg-config $(LIBS_HWPANELEMU) --libs)
 
 $(DIR_OBJ_HWPANELEMU):
 	mkdir -p $@

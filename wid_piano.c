@@ -122,7 +122,7 @@ static void wPianoRedraw(void* wid)
     WidgetPiano* v = (WidgetPiano*)wid;
     uint32_t* bmp = (uint32_t*)v->v.surface->pixels;
     const int xe = v->v.surface->w;
-    const int ye = v->v.surface->h;
+    // const int ye = v->v.surface->h;
 
     for (int k = 0; k < WID_PIANO_NUM_KEYS; k++) {
         if ((v->update_bmp >> k) & 0x1) {
