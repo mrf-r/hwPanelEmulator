@@ -79,9 +79,7 @@ static void wPotProcess(void* wid, uint32_t clock)
         // bringin them back)
         pot = potFilterCompensated(&v->filter, adc, noise_flt, POT_BITS_ADC);
     }
-    MidiMessageT m;
-    m.cn = MIDI_CN_LOCALPANEL;
-    m.cin = m.miditype = MIDI_CIN_CONTROLCHANGE;
+    MidiMessageT m = {.cn = MIDI_CN_LOCALPANEL, .cin = MIDI_CIN_CONTROLCHANGE, .miditype = MIDI_CIN_CONTROLCHANGE, .midichannel = 0};
     m.byte2 = v->midictrl;
     if (pot != potGetPhysicalPosition(&v->potdata)) {
         v->v.need_redraw = 1;

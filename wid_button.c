@@ -7,8 +7,7 @@ __attribute__((weak)) void wButtonMidiSend(uint8_t midictrl, uint8_t value)
 {
     SDL_assert(midictrl < 128);
     SDL_assert(value < 128);
-    MidiMessageT m;
-    m.cn = MIDI_CN_LOCALPANEL;
+    MidiMessageT m = {.cn = MIDI_CN_LOCALPANEL, .midichannel = 0};
     m.cin = m.miditype = value ? MIDI_CIN_NOTEON : MIDI_CIN_NOTEOFF;
     m.byte2 = midictrl;
     m.byte3 = value;

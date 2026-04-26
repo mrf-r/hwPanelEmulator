@@ -6,9 +6,7 @@ __attribute__((weak)) void wEncMidiSend(uint8_t midictrl, uint8_t value)
 {
     SDL_assert(midictrl < 128);
     SDL_assert(value < 128);
-    MidiMessageT m;
-    m.cn = MIDI_CN_LOCALPANEL;
-    m.cin = m.miditype = MIDI_CIN_POLYKEYPRESS;
+    MidiMessageT m = {.cn = MIDI_CN_LOCALPANEL, .cin = MIDI_CIN_POLYKEYPRESS, .miditype = MIDI_CIN_POLYKEYPRESS, .midichannel = 0};
     m.byte2 = midictrl;
     m.byte3 = value;
     midiNonSysexWrite(m);

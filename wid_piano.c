@@ -65,13 +65,12 @@ static const keyCoordinates key_coords[WID_PIANO_NUM_KEYS] = {
 
 __attribute__((weak)) void wPianoMidiSend(WidgetPiano *v, uint8_t key)
 {
-    MidiMessageT m;
+    MidiMessageT m = {.cn = MIDI_CN_USB_DEVICE};
     if ((v->press_int_bmp >> key) & 0x1) {
         uint8_t note = key + v->octave * 12;
         if (v->press_int_bmp & BMP_SHIFT) {
             note += 12;
         }
-        m.cn = MIDI_CN_USB_DEVICE;
         m.cin = m.miditype = MIDI_CIN_NOTEON;
         m.midichannel = v->channel;
         m.byte2 = note;
@@ -80,7 +79,6 @@ __attribute__((weak)) void wPianoMidiSend(WidgetPiano *v, uint8_t key)
         v->keys[key].note = note;
         // printf("noteOn: %02X, %02X, %02X\r\n", m.byte1, m.byte2, m.byte3);
     } else {
-        m.cn = MIDI_CN_USB_DEVICE;
         m.cin = m.miditype = MIDI_CIN_NOTEOFF;
         m.midichannel = v->keys[key].channel;
         m.byte2 = v->keys[key].note;
