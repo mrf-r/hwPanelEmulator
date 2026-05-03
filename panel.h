@@ -17,6 +17,10 @@ extern "C" {
 #include "wid_eeprom.h"
 #include "wid_piano.h"
 
+void panelCriticalLoop(void);
+uint32_t bspGetMs(void);
+void bspDelayMs(const uint32_t time_ms);
+
 #ifdef __cplusplus
 }
 #endif

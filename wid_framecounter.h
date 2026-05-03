@@ -5,9 +5,8 @@
 
 typedef struct {
     Widget v;
-    uint32_t prev_frame;
+    uint32_t next_frame;
     uint16_t counter_proc;
-    uint16_t counter_redraw;
     uint16_t frames_proc;
     uint16_t frames_redraw;
 } WidgetFrameCounter;

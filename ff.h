@@ -1,6 +1,10 @@
 #ifndef FF_H
 #define FF_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "fatfs_wrapper.h"
 
 typedef unsigned int	UINT;	/* int must be 16-bit or 32-bit */
@@ -11,6 +15,10 @@ typedef uint64_t		QWORD;	/* 64-bit unsigned integer */
 typedef WORD			WCHAR;	/* UTF-16 character type */
 
 typedef DIR_WRAPPER     DIR;
+
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif /* FF_H */
