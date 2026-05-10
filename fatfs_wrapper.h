@@ -2,9 +2,7 @@
 #ifndef FATFS_WRAPPER_H
 #define FATFS_WRAPPER_H
 
-#include <stdio.h>
 #include <stdint.h>
-#include <time.h>
 
 /* FatFs return values */
 typedef enum {
@@ -51,7 +49,7 @@ typedef enum {
 
 /* FIL structure */
 typedef struct {
-    FILE* fp;           /* Standard C FILE pointer */
+    void* fp;           /* Standard C FILE pointer */
     char fname[256];    /* File name */
     uint32_t fsize;     /* File size */
     uint32_t fptr;      /* File pointer */
@@ -63,6 +61,7 @@ typedef struct {
 typedef struct {
     void* dir;          /* Directory stream pointer */
     char path[256];     /* Directory path */
+    const char* find;   /* Find pattern */
     int index;          /* Current index */
 } DIR_WRAPPER;
 
@@ -112,6 +111,9 @@ FRESULT f_printf(FIL* fp, const char* fmt, ...);
 FRESULT f_chdir(const char* path);
 FRESULT f_chdrive(const char* path);
 FRESULT f_getcwd(char* buff, uint32_t len);
+
+FRESULT f_findfirst (DIR_WRAPPER* dp, FILINFO* fno, const char* path, const char* pattern);
+FRESULT f_findnext (DIR_WRAPPER* dp, FILINFO* fno);
 
 /* Utility macros */
 #define f_eof(fp) ((fp)->fptr >= (fp)->fsize)

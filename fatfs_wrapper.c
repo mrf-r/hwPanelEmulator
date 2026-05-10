@@ -6,7 +6,9 @@
 #include <stdarg.h>
 #include <errno.h>
 #include <unistd.h>
-// #include <ctype.h>
+#include <ctype.h>
+#include <time.h>
+#include <SDL.h>
 #include "panel_conf.h"
 
 #ifndef FF_VOLUMES
@@ -17,9 +19,9 @@
 // TODO: SDL_GetBasePath
 #endif
 
-// #include <stdio.h>
-// #define FF_PRINTF printf
-#define FF_PRINTF(...)
+#include <stdio.h>
+#define FF_PRINTF printf
+// #define FF_PRINTF(...)
 
 static const char *program_root[FF_VOLUMES] = FF_VOLUME_ROOT;
 
@@ -32,27 +34,26 @@ static const char* translate_path(const char* fatfs_path, char* buffer, size_t b
         return NULL;
     }
     
+    int drive = 0;
+    const char* path_start = fatfs_path;
     /* Check if it's a FatFs-style path (e.g., "0:/", "1:/", etc.) */
     if (strlen(fatfs_path) >= 2 && fatfs_path[1] == ':') {
         /* Parse drive number */
-        int drive = fatfs_path[0] - '0';
-        if (drive >= 0 && drive < FF_VOLUMES) {
-            const char* path_start = fatfs_path + 2;
-            /* Skip the '/' if present */
-            if (*path_start == '/' || *path_start == '\\') {
-                path_start++;
-            }
-            if (mounted_fs[drive].mounted == 1) {
-                snprintf(buffer, buffer_size, "%s/%s", program_root[drive], path_start);
-                FF_PRINTF("ff: %s -> %s\n", __func__, buffer);
-                fflush(stdout);
-                return buffer;
-            }
-        }
-        return NULL;
+        drive = fatfs_path[0] - '0';
+        fatfs_path += 2;
     }
-    FF_PRINTF("ff: %s -> %s\n", __func__, fatfs_path);
-    return fatfs_path;
+    if (drive >= 0 && drive < FF_VOLUMES) {
+        /* Skip the '/' if present */
+        if (*path_start == '/' || *path_start == '\\') {
+            path_start++;
+        }
+        if (mounted_fs[drive].mounted == 1) {
+            snprintf(buffer, buffer_size, "%s/%s", program_root[drive], path_start);
+            FF_PRINTF("ff: %s -> %s\n", __func__, buffer);
+            return buffer;
+        }
+    }
+    return NULL;
 }
 
 /* Helper function to convert mode flags */
@@ -212,7 +213,7 @@ FRESULT f_close(FIL* fp) {
 }
 
 FRESULT f_read(FIL* fp, void* buff, uint32_t btr, uint32_t* br) {
-    FF_PRINTF("ff: %s\n", __func__);
+    // FF_PRINTF("ff: %s\n", __func__);
     if (!fp || !fp->fp || !buff) {
         return FR_INVALID_OBJECT;
     }
@@ -263,7 +264,7 @@ FRESULT f_write(FIL* fp, const void* buff, uint32_t btw, uint32_t* bw) {
 }
 
 FRESULT f_lseek(FIL* fp, uint32_t ofs) {
-    FF_PRINTF("ff: %s\n", __func__);
+    // FF_PRINTF("ff: %s\n", __func__);
     if (!fp || !fp->fp) {
         return FR_INVALID_OBJECT;
     }
@@ -339,6 +340,8 @@ FRESULT f_opendir(DIR_WRAPPER* dp, const char* path) {
         }
         return FR_DISK_ERR;
     }
+
+    dp->find = NULL;
     
     strncpy(dp->path, real_path, sizeof(dp->path) - 1);
     dp->path[sizeof(dp->path) - 1] = '\0';
@@ -362,7 +365,6 @@ FRESULT f_closedir(DIR_WRAPPER* dp) {
 }
 
 FRESULT f_readdir(DIR_WRAPPER* dp, FILINFO* fno) {
-    FF_PRINTF("ff: %s\n", __func__);
     if (!dp || !dp->dir) {
         return FR_INVALID_OBJECT;
     }
@@ -379,6 +381,7 @@ FRESULT f_readdir(DIR_WRAPPER* dp, FILINFO* fno) {
     if (fno) {
         strncpy(fno->fname, entry->d_name, sizeof(fno->fname) - 1);
         fno->fname[sizeof(fno->fname) - 1] = '\0';
+        FF_PRINTF("ff: %s: %s\n", __func__, fno->fname);
         
         /* Get file stats */
         char full_path[512];
@@ -655,4 +658,80 @@ FRESULT f_getcwd(char* buff, uint32_t len) {
     }
     
     return FR_OK;
+}
+
+/* Pattern matching function (supports * and ? wildcards) */
+static int pattern_match(const char* pattern, const char* string) {
+    const char* s = string;
+    const char* p = pattern;
+
+    if (!*p) {
+        return 0;
+    }
+
+    while (*s) {
+        if ((*p == '?') || (toupper(*p) == toupper(*s))) {
+            s++;
+            p++;
+        } else if (*p == '*') {
+            SDL_assert(p[1] != '*');
+            if  (*s == p[1]) {
+                p++;
+            } else {
+                s++;
+            }
+        } else {
+            return 0;
+        }
+    }
+    
+    while (*p == '*') {
+        p++;
+    }
+    return !*p;
+}
+
+/* Find first file matching pattern */
+FRESULT f_findfirst(DIR_WRAPPER* dp, FILINFO* fno, const char* path, const char* pattern) {
+    FF_PRINTF("ff: %s\n", __func__);
+    if (!dp || !fno || !path || !pattern) {
+        return FR_INVALID_PARAMETER;
+    }
+    
+    FRESULT res = f_opendir(dp, path);
+    if (res != FR_OK) {
+        return res;
+    }
+    
+    dp->find = pattern;
+    
+    /* Find first matching file */
+    return f_findnext(dp, fno);
+}
+
+/* Find next file matching pattern */
+FRESULT f_findnext(DIR_WRAPPER* dp, FILINFO* fno) {
+    FF_PRINTF("ff: %s\n", __func__);
+    if (!dp || !fno) {
+        return FR_INVALID_PARAMETER;
+    }
+    
+    FRESULT res;
+    /* Read directory entries until we find a match */
+    while (1) {
+        res = f_readdir(dp, fno);
+        if (res != FR_OK) {
+            return res;
+        }
+        
+        /* End of directory */
+        if (fno->fname[0] == '\0') {
+            return FR_OK;
+        }
+        
+        /* Check if filename matches pattern */
+        if (pattern_match(dp->find, fno->fname)) {
+            return FR_OK;
+        }
+    }
 }

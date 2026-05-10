@@ -2,7 +2,7 @@
 #include "wid_graphics.h"
 #include "mbwmidi.h"
 
-#include "stdio.h"
+// #include "stdio.h"
 // #define WMIDI_PRINTF printf
 #define WMIDI_PRINTF(...)
 
