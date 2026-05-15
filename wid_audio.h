@@ -2,9 +2,9 @@
 #define __WID_AUDIO_H
 
 #include "widget.h"
-#include <portaudio.h>
-
+    
 #define VIDAUDIO_NAMELENGTH 32
+// #define PANEL_AUDIO_NONBUFFERED_CALLS
 
 typedef enum {
     VAUDIO_OFF = 0,
@@ -12,6 +12,16 @@ typedef enum {
     VAUDIO_ERROR,
     VAUDIO_ACTIVE
 } WidAudioStatus;
+
+typedef int32_t WAudioT; // TODO: do something with paInt16-paInt32 selections
+typedef void PanelAudioProcessCallbackT(const WAudioT* const input, WAudioT* const output, const unsigned frameCount);
+
+ // TODO: PANEL_AUDIO_BUFFER_SIZE configurable
+#ifndef PANEL_AUDIO_HW_BUFFER_SIZE
+#define PANEL_AUDIO_HW_BUFFER_SIZE 2048
+#endif
+#define PANEL_AUDIO_HW_IN_CNANNELS 2
+#define PANEL_AUDIO_HW_OUT_CNANNELS 2
 
 typedef struct {
     Widget v;
@@ -27,29 +37,15 @@ typedef struct {
     uint16_t errorcounter;
     uint16_t error_last;
     uint16_t errorcounter_prev;
+#ifndef PANEL_AUDIO_NONBUFFERED_CALLS
+    // 3 buffers for unaligned
+    WAudioT audio_out[PANEL_AUDIO_HW_BUFFER_SIZE * PANEL_AUDIO_HW_OUT_CNANNELS * 3];
+    WAudioT audio_in[PANEL_AUDIO_HW_BUFFER_SIZE * PANEL_AUDIO_HW_IN_CNANNELS * 3];
+    volatile uint32_t audio_head;
+    volatile uint32_t audio_tail;
+#endif
+    PanelAudioProcessCallbackT* process_callback;
 } WidgetAudio;
-
-// TODO: channels and bits?
-#define WID_AUDIO_CALLBACK_DEFINE(pa_callback_name, simplified_callback)                     \
-    static int pa_callback_name(                                                             \
-        const void* inputBuffer,                                                             \
-        void* outputBuffer,                                                                  \
-        unsigned long framesPerBuffer,                                                       \
-        const PaStreamCallbackTimeInfo* timeInfo,                                            \
-        PaStreamCallbackFlags statusFlags,                                                   \
-        void* userData)                                                                      \
-    {                                                                                        \
-        (void)timeInfo; /* TODO: do something with timeInfo? */                              \
-        WidgetAudio* v = (WidgetAudio*)userData;                                             \
-        if (statusFlags) {                                                                   \
-            v->errorcounter++;                                                               \
-            v->error_last = (uint16_t)statusFlags;                                           \
-        }                                                                                    \
-        v->blockcounter++;                                                                   \
-        v->lastblocksize = framesPerBuffer;                                                  \
-        simplified_callback((int16_t*)inputBuffer, (int16_t*)outputBuffer, framesPerBuffer); \
-        return paContinue;                                                                   \
-    }
 
 void wAudioInit(
     WidgetAudio* v,
@@ -58,8 +54,8 @@ void wAudioInit(
     SDL_Renderer* rend,
     const char* dev_name_in,
     const char* dev_name_out,
-    uint32_t samplerate,
-    uint32_t blocksize,
-    PaStreamCallback* pa_callback_name);
+    uint32_t samplerate, // same for hw and app
+    uint32_t blocksize, // application blocksize may differ from hw buffer
+    PanelAudioProcessCallbackT* process_callback);
 
 #endif // __WID_AUDIO_H

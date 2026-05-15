@@ -4,14 +4,20 @@ Cross platform project for experimenting with different MIDI control panel layou
 
 The idea is to have Arduino-like simplicity in building control surfaces and dsp code in C/C++.
 
+### Basics:
+
+- `Panel` - this SW module, that replaces bsp hw layer
+- `App` - C/C++ project, that this module will be integrated
+
+### What is expected from inegrator:
+
 - `#include "panel.h"`
-- `void panelConstruct(SDL_Renderer* rend)` - in which you must init various widgets you need on your surface
-- `void panelLoop(uint32_t clock)` - in which you must handle those widgets (the application part), perform midi processing and routing and other logic you need. NOTE: call rate may be less than 60 Hz!!!
-- `void synthAudioCallback(int16_t* const buffer_in, int16_t* const buffer_out, const uint16_t length)` - A simplified callback called by PortAudio. The call rate depends on the block size and sample rate parameters. This method should only contain a buffer access, while the main audio processing should preferably be performed in the main loop (panelLoop). The buffer size should therefore take into account the low frequency of the panelLoop - approximately 1024 samples for 48 kHz.
+- `void panelConstruct(SDL_Renderer* rend)` - init and position various widgets you need on your surface
+- `void appStart()` - application init/startup procedures, welcome screens, etc
+- `void appLoop(uint32_t clock)` - application main loop - capture controls from panel widgets, perform midi processing and routing, etc. Max call rate is approximately 500 Hz (see framecounter)
+- `PanelAudioProcessCallbackT` - A simplified callback for audio block processing for audio widget. The call rate depends on the block size and sample rate parameters. By default, it is placed in panelCriticalLoop (main app loop) with `PANEL_AUDIO_HW_BUFFER_SIZE` buffer size. It may be moved directly to the portaudio callback via `PANEL_AUDIO_NONBUFFERED_CALLS` build define to reduce the latency.
 
-It is better to look at the implementation details in the https://github.com/mrf-r/hwpeTestProj. It will likely become outdated over time. I'll try to move the documentation here.
-
-### Components:
+### Widgets:
 
 - Button - can be pressed or drag-pressed by the mouse, keyboard or touch. Will generate events on press and release in the form of midi messages. Can be differentiated from regular midi messages by .cn (cable number) field in message structure (see mbwmidi lib and USB MIDI class 1 specs). Widgets have RGB leds. For the displays led acts as a backlight color.
 - Encoder - touch and drag (y-coarse, x-fine), or scroll wheel over it. Will generate events with relative signed values depending on the travel distance.
@@ -26,7 +32,7 @@ It is better to look at the implementation details in the https://github.com/mrf
 Should be compatible with Arduino MIDI over serial.
 - audio - based on portaudio library. In case you want to experiment with synthesis. It can be initialized with NULL instead of device names to select default devices. Portaudio callback for each audio connection should be created using `WID_AUDIO_CALLBACK_DEFINE` macro. When creating it, you need to specify the name of the callback to be created, which will be used when creating the widget, as well as the block handling method it will call. At the moment the call is made from portaudio library, so all thread safety is on you. I am thinking about calling it from widget process, but it will cause additional latency.
 - eeprom - just bsp read and write methods, which is about the same as what you probably get on hw. You may have multiple chips. Make sure you select one with `void wEepromSelect(const EmuEeprom* const e)` before calling read or write. **!! The file name must not contain folders !!**
-- ff - [FatFS](https://www.elm-chan.org/fsw/ff/) emulator. Disk `0:/` is `{cwd}/ff_sd/`, disk `1:/` - `{cwd}/ff_ext/`.
+- ff - [FatFS](https://www.elm-chan.org/fsw/ff/) emulator. Disk `0:/` is `{cwd}/ff_sd/`, disk `1:/` - `{cwd}/ff_ext/`. Custom paths may be specified in panel_conf.h
 
 ### Dependencies
 
@@ -35,8 +41,16 @@ Should be compatible with Arduino MIDI over serial.
 
 ### TODO:
 
+- .process methods are now in separate thread, is it still thread-safe?
+    - main sdl thread: 60Hz - capture controls, redraw elements(need_redraw)
+    - fastloop: process controls, redraw commands(need_redraw), bspLedSet
 - pot/encoder rate limiter
+- audio runtime re-configuration 
 - midi select device or use default device
 - test midi over serial
-- 
+- config file
+- audio buffered not working
+- cycle measurements
+- put .process of some widgets to events?
+- separate thread for mainloop? (https://github.com/libsdl-org/SDL/issues/1059 and maybe to split btwn cores??)
 

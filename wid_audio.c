@@ -1,11 +1,52 @@
 #include "wid_audio.h"
 #include "wid_graphics.h"
 #include <portaudio.h>
+#include <string.h>
 
-#include "stdio.h"
+#include <stdio.h>
 #define WAUDIO_PRINTF printf
 // #define WAUDIO_PRINTF(...)
 
+static int pa_callback(
+    const void* inputBuffer,
+    void* outputBuffer,
+    unsigned long framesPerBuffer,
+    const PaStreamCallbackTimeInfo* timeInfo,
+    PaStreamCallbackFlags statusFlags,
+    void* userData)
+{
+    (void)timeInfo; // TODO: do something with timeInfo?
+    WidgetAudio* v = (WidgetAudio*)userData;
+    if (statusFlags) {
+        v->errorcounter++;
+        v->error_last = (uint16_t)statusFlags;
+    }
+    v->blockcounter++;
+    v->lastblocksize = framesPerBuffer;
+
+#ifndef PANEL_AUDIO_NONBUFFERED_CALLS
+    uint32_t pos = v->audio_tail % (PANEL_AUDIO_HW_BUFFER_SIZE * 2);
+    for (unsigned i = 0; i < framesPerBuffer; i++) {
+        memcpy(
+            &v->audio_in[pos * PANEL_AUDIO_HW_IN_CNANNELS],
+            &((const WAudioT*)inputBuffer)[i * PANEL_AUDIO_HW_IN_CNANNELS],
+            sizeof(WAudioT) * PANEL_AUDIO_HW_IN_CNANNELS
+        );
+        memcpy(
+            &((WAudioT*)outputBuffer)[i * PANEL_AUDIO_HW_OUT_CNANNELS],
+            &v->audio_out[pos * PANEL_AUDIO_HW_OUT_CNANNELS],
+            sizeof(WAudioT) * PANEL_AUDIO_HW_OUT_CNANNELS
+        );
+        pos = (pos + 1) % (PANEL_AUDIO_HW_BUFFER_SIZE * 2);
+    }
+    v->audio_tail = v->audio_tail + framesPerBuffer;
+#else // PANEL_AUDIO_NONBUFFERED_CALLS
+    v->process_callback(inputBuffer, outputBuffer, framesPerBuffer);
+#endif // PANEL_AUDIO_NONBUFFERED_CALLS
+    return paContinue;
+}
+
+// it is possible to use multiple  
 __attribute__((unused)) static unsigned portaudio_requests = 0;
 __attribute__((unused)) static PaError portaudio_status;
 
@@ -28,32 +69,7 @@ static void portaudioTerminateGlobal()
     }
 }
 
-// void audioBufferProcessCallback(int16_t* const buffer_in, int16_t* const buffer_out, const uint16_t length);
-
-// __attribute__((weak)) void audioBufferProcessCallback(int16_t* const buffer_in, int16_t* const buffer_out, const uint16_t length)
-// {
-//     static float left_phase = 0;
-//     static float right_phase = 0;
-//     int16_t* __restrict in = buffer_in;
-//     int16_t* __restrict out = buffer_out;
-//     const int16_t* out_end = buffer_out + (length * 2); // stereo
-//     // heavily inspired by the KORG Logue SDK https://github.com/korginc/logue-sdk
-//     for (; out_end > out; out += 2, in += 2) {
-//         // out[0] = in[0];
-//         // out[1] = in[1];
-//         out[0] = left_phase * 32767.f * 0.1f + in[0];
-//         out[1] = right_phase * 32767.f * 0.1f + in[1];
-//         // Generate simple -1.0 and 1.0 sawtooth
-//         left_phase += 0.01001f;
-//         if (left_phase >= 1.0f)
-//             left_phase -= 2.0f;
-//         right_phase += 0.012f;
-//         if (right_phase >= 1.0f)
-//             right_phase -= 2.0f;
-//     }
-// }
-
-static void wAudioRedraw(void* wid)
+static void wAudioRedraw(void* wid) // TODO:
 {
     WidgetAudio* v = (WidgetAudio*)wid;
     SDL_FillRect(v->v.surface, 0, 0);
@@ -86,6 +102,39 @@ static void wAudioProcess(void* wid, uint32_t clock)
         v->errorcounter_prev = errorcounter;
         v->v.need_redraw = 1;
     }
+#ifndef PANEL_AUDIO_NONBUFFERED_CALLS
+    // TODO: time analysis
+    while ((v->audio_tail - v->audio_head) > v->blocksize) {
+        uint32_t current_app_pos = (v->audio_head) % (PANEL_AUDIO_HW_BUFFER_SIZE * 2);
+        uint32_t new_app_pos = (v->audio_head + v->blocksize) % (PANEL_AUDIO_HW_BUFFER_SIZE * 2);
+        if (new_app_pos < v->blocksize) {
+            // data should be linear for the callback, so we use buffer extension and additional input de-wrapping
+            // and output wrapping steps
+            memcpy(
+                &v->audio_in[PANEL_AUDIO_HW_BUFFER_SIZE * 2 * PANEL_AUDIO_HW_IN_CNANNELS],
+                &v->audio_in[0],
+                sizeof(WAudioT) * PANEL_AUDIO_HW_IN_CNANNELS * (new_app_pos + 1)
+            );
+            v->process_callback(
+                &v->audio_in[current_app_pos * PANEL_AUDIO_HW_IN_CNANNELS],
+                &v->audio_out[current_app_pos * PANEL_AUDIO_HW_OUT_CNANNELS],
+                v->blocksize
+            );
+            memcpy(
+                v->audio_out,
+                &v->audio_out[PANEL_AUDIO_HW_BUFFER_SIZE * 2 * PANEL_AUDIO_HW_OUT_CNANNELS],
+                sizeof(WAudioT) * PANEL_AUDIO_HW_OUT_CNANNELS * (new_app_pos + 1)
+            );
+        } else {
+            v->process_callback(
+                &v->audio_in[current_app_pos * PANEL_AUDIO_HW_IN_CNANNELS],
+                &v->audio_out[current_app_pos * PANEL_AUDIO_HW_OUT_CNANNELS],
+                v->blocksize
+            );
+        }
+        v->audio_head = v->audio_head + v->blocksize;
+    }
+#endif // PANEL_AUDIO_NONBUFFERED_CALLS
 }
 
 static void wAudioTerminate(void* wid)
@@ -97,16 +146,16 @@ static void wAudioTerminate(void* wid)
         PaError err;
         if ((VAUDIO_ACTIVE == v->status) || (VAUDIO_ERROR == v->status)) {
             err = Pa_StopStream((PaStream*)v->instance);
-            printf("\nPa_StopStream: %s", Pa_GetErrorText(err));
+            WAUDIO_PRINTF("\nPa_StopStream: %s", Pa_GetErrorText(err));
             // err = Pa_AbortStream( stream ); // immediately
             err = Pa_CloseStream((PaStream*)v->instance);
-            printf("\nPa_CloseStream: %s", Pa_GetErrorText(err));
+            WAUDIO_PRINTF("\nPa_CloseStream: %s", Pa_GetErrorText(err));
         }
         portaudioTerminateGlobal();
     }
 }
 
-static void wAudioMouseMove(void* wid, WidgetTouchData* d, unsigned touch_elements)
+static void wAudioMouseMove(void* wid, WidgetTouchData* d, unsigned touch_elements) // TODO
 {
     WidgetAudio* v = (WidgetAudio*)wid;
     uint8_t pointed = 0;
@@ -120,7 +169,7 @@ static void wAudioMouseMove(void* wid, WidgetTouchData* d, unsigned touch_elemen
     }
     v->pointed = pointed;
 }
-static void wAudioMouseClick(void* wid, WidgetTouchData* d)
+static void wAudioMouseClick(void* wid, WidgetTouchData* d) // TODO
 {
     WidgetAudio* v = (WidgetAudio*)wid;
     if (SDL_PointInRect(&d->point, &v->v.rect)) {
@@ -138,6 +187,12 @@ static WidgetApi wAudioApi = {
     .terminate = wAudioTerminate
 };
 
+#ifndef PANEL_AUDIO_NONBUFFERED_CALLS
+    #define BLOCKSIZE PANEL_AUDIO_HW_BUFFER_SIZE
+#else
+    #define BLOCKSIZE v->blocksize
+#endif
+
 void wAudioInit(
     WidgetAudio* v,
     uint16_t x,
@@ -147,11 +202,9 @@ void wAudioInit(
     const char* dev_name_out,
     uint32_t samplerate,
     uint32_t blocksize,
-    PaStreamCallback* pa_callback_name)
+    PanelAudioProcessCallbackT* process_callback)
 {
-    static int already_inited = 0;
-    SDL_assert(0 == already_inited);
-    already_inited++; // singletone
+    memset(v, 0, sizeof(WidgetAudio));
 
     if (dev_name_in)
         SDL_strlcpy(v->name_in, dev_name_in, VIDAUDIO_NAMELENGTH);
@@ -162,7 +215,12 @@ void wAudioInit(
     else
         v->name_out[0] = 0;
     v->samplerate = samplerate;
+ 
+#ifndef PANEL_AUDIO_NONBUFFERED_CALLS
+    SDL_assert(blocksize < PANEL_AUDIO_HW_BUFFER_SIZE);
+#endif
     v->blocksize = blocksize;
+    v->process_callback = process_callback;
 
     widgetInit(&v->v, (void*)v, &wAudioApi, x, y, 40, 19, 1, rend);
     v->status = VAUDIO_OFF;
@@ -177,11 +235,20 @@ void wAudioInit(
     if (paNoError == portaudio_status) {
         if ((0 == v->name_in[0]) && (0 == v->name_out[0])) {
             // names are not defined, use default devices
-            err = Pa_OpenDefaultStream((PaStream**)&v->instance, 2, 2, paInt16, v->samplerate, v->blocksize, pa_callback_name, v);
+            err = Pa_OpenDefaultStream(
+                (PaStream**)&v->instance,
+                PANEL_AUDIO_HW_IN_CNANNELS,
+                PANEL_AUDIO_HW_OUT_CNANNELS,
+                sizeof(WAudioT) == 2 ? paInt16 : paInt32,
+                v->samplerate,
+                BLOCKSIZE,
+                pa_callback,
+                v
+            );
             WAUDIO_PRINTF("\nPa_OpenDefaultStream: %s", Pa_GetErrorText(err));
             if (0 == err) {
                 err = Pa_StartStream((PaStream*)v->instance);
-                printf("\nPa_StartStream: %s", Pa_GetErrorText(err));
+                WAUDIO_PRINTF("\nPa_StartStream: %s", Pa_GetErrorText(err));
             }
             v->status = (0 == err) ? VAUDIO_ACTIVE : VAUDIO_ERROR;
             // get names
@@ -205,14 +272,14 @@ void wAudioInit(
             if (num_devices > 0) {
                 PaStreamParameters stream_in;
                 stream_in.device = -1;
-                stream_in.channelCount = 2;
-                stream_in.sampleFormat = paInt16;
+                stream_in.channelCount = PANEL_AUDIO_HW_IN_CNANNELS;
+                stream_in.sampleFormat = sizeof(WAudioT) == 2 ? paInt16 : paInt32;
                 stream_in.suggestedLatency = 10;
                 stream_in.hostApiSpecificStreamInfo = NULL;
                 PaStreamParameters stream_out;
                 stream_out.device = -1;
-                stream_out.channelCount = 2;
-                stream_out.sampleFormat = paInt16;
+                stream_out.channelCount = PANEL_AUDIO_HW_OUT_CNANNELS;
+                stream_out.sampleFormat = sizeof(WAudioT) == 2 ? paInt16 : paInt32;
                 stream_out.suggestedLatency = 10;
                 stream_out.hostApiSpecificStreamInfo = NULL;
                 // scan all
@@ -251,11 +318,11 @@ void wAudioInit(
                     const PaDeviceInfo* dout_info = Pa_GetDeviceInfo(stream_out.device);
                     SDL_strlcpy(v->name_in, din_info->name, VIDAUDIO_NAMELENGTH - 2);
                     SDL_strlcpy(v->name_out, dout_info->name, VIDAUDIO_NAMELENGTH - 2);
-                    err = Pa_OpenStream((PaStream**)&v->instance, &stream_in, &stream_out, v->samplerate, v->blocksize, paNoFlag, pa_callback_name, v);
+                    err = Pa_OpenStream((PaStream**)&v->instance, &stream_in, &stream_out, v->samplerate, BLOCKSIZE, paNoFlag, pa_callback, v);
                     WAUDIO_PRINTF("\nPa_OpenStream: %s", Pa_GetErrorText(err));
                     if (0 == err) {
                         err = Pa_StartStream((PaStream*)v->instance);
-                        printf("\nPa_StartStream: %s", Pa_GetErrorText(err));
+                        WAUDIO_PRINTF("\nPa_StartStream: %s", Pa_GetErrorText(err));
                     }
                     v->status = (0 == err) ? VAUDIO_ACTIVE : VAUDIO_ERROR;
                 }

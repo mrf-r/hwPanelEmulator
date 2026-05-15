@@ -17,7 +17,8 @@ extern "C" {
 #include "wid_eeprom.h"
 #include "wid_piano.h"
 
-void panelCriticalLoop(void);
+// exposed for custom bspDelayMs-like blocking methods
+uint32_t panelCriticalLoop(void);
 uint32_t bspGetMs(void);
 void bspDelayMs(const uint32_t time_ms);
 

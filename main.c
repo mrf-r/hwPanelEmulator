@@ -2,9 +2,6 @@
 #include "widget.h"
 #include "panel_conf.h"
 
-#ifndef PANEL_FPS
-#define PANEL_FPS 60
-#endif
 #ifndef PANEL_COLOR
 #define PANEL_COLOR 0xFF7D7F6C
 #endif
@@ -36,7 +33,8 @@
 
 // --- to be implemented by user
 void panelConstruct(SDL_Renderer* rend);
-void panelLoop(uint32_t clock);
+void appStart(void);
+void appLoop(uint32_t clock);
 // ---
 
 uint32_t lcg;
@@ -177,203 +175,47 @@ static inline void widgetMouseWheelAll(SDL_Point* pos, int32_t delta)
     }
 }
 
-static SDL_bool loop = SDL_FALSE;
-static SDL_Window* screen;
-static SDL_Renderer* rend;
-static SDL_Surface* surf;
-static SDL_Texture* texture;
-static WidgetTouchData touch_data[TOUCHPOINTS_TOTAL]; // touch + mouse
+static volatile SDL_bool loop = SDL_FALSE;
 volatile uint32_t fps_counter;
 
-static inline void panelQuit() {
-    widgetFreeAll();
-    SDL_DestroyTexture(texture);
-    SDL_FreeSurface(surf);
-    SDL_DestroyRenderer(rend);
-    SDL_DestroyWindow(screen);
-    SDL_Quit();
+// for bspDelayMs() and other blocking app calls
+uint32_t panelCriticalLoop()
+{
+    const uint32_t clock = SDL_GetTicks();
+    widgetProcessAll(clock);
+    // if (SDL_FALSE == loop) {
+    //     // to kill user delay loop while exit was requested
+    //     // __asm volatile("ud2" ::: "memory");
+    //     __builtin_trap();
+    // }
+    return clock;
 }
 
-static inline void panelRenderCheck(uint32_t clock) {
-    static uint32_t render_time = 0;
-    if (clock - render_time < INT32_MAX) {
-        fps_counter++;
-        SDL_RenderClear(rend);
-        SDL_UpdateTexture(texture, 0, surf->pixels, surf->pitch);
-        SDL_RenderCopy(rend, texture, 0, 0);
-        widgetRedrawAll();
-        widgetRenderAll(rend);
-        SDL_RenderPresent(rend);
-        render_time = SDL_GetTicks() + (1000 / PANEL_FPS);
+// SDL_ThreadFunction
+SDLCALL int panelFastLoopThread(void* data)
+{
+    (void)data;
+    appStart();
+    int ret = SDL_SetThreadPriority(SDL_THREAD_PRIORITY_TIME_CRITICAL);
+    while(loop) {
+        const uint32_t clock = panelCriticalLoop();
+        appLoop(clock);
+        SDL_Delay(1);
     }
-}
-
-static inline void panelCoreLoop(const SDL_bool userLoopIncluded) {
-    SDL_assert(loop);
-    SDL_Event event;
-    if (0 == SDL_PollEvent(&event)) {
-        const uint32_t clock = SDL_GetTicks();
-        // process widgets
-        widgetProcessAll(clock);
-        // process user panel
-        if(SDL_TRUE == userLoopIncluded) {
-            panelLoop(clock);
-        }
-        // update framebuffer
-        panelRenderCheck(clock);
-    } else {
-        switch (event.type) {
-        // case SDL_POLLSENTINEL:
-        //     // end of event queue
-        //     break;
-        case SDL_MOUSEMOTION:
-            DEBUG_PRINTF("\n mousemotion %d, %d", event.motion.x, event.motion.y);
-            if (touch_data[TOUCHPOINT_MOUSE].drag) {
-                int32_t pval = 0;
-                pval += event.motion.xrel;
-                int32_t ax = event.motion.yrel;
-                if (ax < 0) {
-                    ax = -ax;
-                }
-                if (ax > 3) {
-                    pval -= event.motion.yrel * 4;
-                }
-                touch_data[TOUCHPOINT_MOUSE].drag(touch_data[TOUCHPOINT_MOUSE].instance, pval);
-            } else {
-                touch_data[TOUCHPOINT_MOUSE].point.x = event.motion.x;
-                touch_data[TOUCHPOINT_MOUSE].point.y = event.motion.y;
-                widgetMouseMoveAll(touch_data, TOUCHPOINTS_TOTAL);
-            }
-            break;
-        case SDL_FINGERMOTION:
-            DEBUG_PRINTF("\n fingermotion %d, %6g, %6g", (int)event.tfinger.fingerId, event.tfinger.x, event.tfinger.y);
-            for (unsigned i = 0; i < MULTITOUCH_MAX_FINGERS; i++) {
-                if (event.tfinger.fingerId == touch_data[TOUCHPOINT_FINGER(i)].finger) {
-                    if (touch_data[TOUCHPOINT_FINGER(i)].drag) {
-                        int32_t pval = 0;
-                        pval += (int)(event.tfinger.dx * (float)(PANEL_SIZE_X * PANEL_SCALE));
-                        int32_t ax = (int)(event.tfinger.dy * (float)(PANEL_SIZE_Y * PANEL_SCALE));
-                        if ((ax < -1) || (ax > 3)) {
-                            pval -= ax * 4;
-                        }
-                        touch_data[TOUCHPOINT_FINGER(i)].drag(touch_data[TOUCHPOINT_FINGER(i)].instance, pval);
-                    } else {
-                        touch_data[TOUCHPOINT_FINGER(i)].point.x = (int)(event.tfinger.x * (float)(PANEL_SIZE_X * PANEL_SCALE));
-                        touch_data[TOUCHPOINT_FINGER(i)].point.y = (int)(event.tfinger.y * (float)(PANEL_SIZE_Y * PANEL_SCALE));
-                        widgetMouseMoveAll(touch_data, TOUCHPOINTS_TOTAL);
-                    }
-                }
-            }
-            break;
-        // case SDL_DOLLARGESTURE:
-        // case SDL_DOLLARRECORD:
-        // case SDL_MULTIGESTURE:
-        //     DEBUG_PRINTF("\n gesture");
-        //     // no gestures!
-        //     break;
-        case SDL_MOUSEBUTTONUP:
-            DEBUG_PRINTF("\n mouse release %d, %d", event.button.x, event.button.y);
-            if (touch_data[TOUCHPOINT_MOUSE].drag) {
-                touch_data[TOUCHPOINT_MOUSE].drag = 0;
-                SDL_SetRelativeMouseMode(SDL_FALSE);
-                SDL_WarpMouseInWindow(screen, touch_data[TOUCHPOINT_MOUSE].point.x, touch_data[TOUCHPOINT_MOUSE].point.y);
-            } else if (SDL_TRUE == touch_data[TOUCHPOINT_MOUSE].is_pressed) {
-                touch_data[TOUCHPOINT_MOUSE].is_pressed = SDL_FALSE;
-                widgetMouseMoveAll(touch_data, TOUCHPOINTS_TOTAL);
-            }
-            break;
-        case SDL_FINGERUP:
-            DEBUG_PRINTF("\n finger release %d, %6g, %6g", (int)event.tfinger.fingerId, event.tfinger.x, event.tfinger.y);
-            for (unsigned i = 0; i < MULTITOUCH_MAX_FINGERS; i++) {
-                unsigned tpos = TOUCHPOINT_FINGER(i);
-                if (event.tfinger.fingerId == touch_data[tpos].finger) {
-                    touch_data[tpos].is_pressed = SDL_FALSE;
-                    touch_data[tpos].drag = 0;
-                    touch_data[tpos].point.x = -1;
-                    touch_data[tpos].point.y = -1;
-                    touch_data[tpos].finger = 0;
-                    widgetMouseMoveAll(touch_data, TOUCHPOINTS_TOTAL);
-                }
-            }
-            // for (unsigned i = 0; i < TOUCHPOINTS_TOTAL; i++) {
-            //     DEBUG_PRINTF("\n %d: %d,%d", i, touch_data[i].point.x, touch_data[i].point.y);
-            // }
-            break;
-        case SDL_MOUSEBUTTONDOWN:
-            DEBUG_PRINTF("\n mouse press %d, %d", event.button.x, event.button.y);
-            widgetMouseClickAll(&touch_data[TOUCHPOINT_MOUSE]);
-            if (touch_data[TOUCHPOINT_MOUSE].drag) {
-                SDL_SetRelativeMouseMode(SDL_TRUE);
-            } else {
-                touch_data[TOUCHPOINT_MOUSE].is_pressed = SDL_TRUE;
-            }
-            break;
-        case SDL_FINGERDOWN:
-            DEBUG_PRINTF("\n finger press %d, %6g, %6g", (int)event.tfinger.fingerId, event.tfinger.x, event.tfinger.y);
-            for (unsigned i = 0; i < MULTITOUCH_MAX_FINGERS; i++) {
-                unsigned tpos = TOUCHPOINT_FINGER(i);
-                if (0 == touch_data[tpos].finger) {
-                    touch_data[tpos].finger = event.tfinger.fingerId;
-                    touch_data[tpos].point.x = (int)(event.tfinger.x * (float)(PANEL_SIZE_X * PANEL_SCALE));
-                    touch_data[tpos].point.y = (int)(event.tfinger.y * (float)(PANEL_SIZE_Y * PANEL_SCALE));
-                    touch_data[tpos].drag = 0;
-                    widgetMouseClickAll(&touch_data[tpos]);
-                    if (0 == touch_data[tpos].drag) {
-                        touch_data[tpos].is_pressed = SDL_TRUE;
-                    }
-                    break;
-                }
-            }
-            // for (unsigned i = 0; i < TOUCHPOINTS_TOTAL; i++) {
-            //     DEBUG_PRINTF("\n %d: %d,%d", i, touch_data[i].point.x, touch_data[i].point.y);
-            // }
-            break;
-        case SDL_MOUSEWHEEL:
-            DEBUG_PRINTF("\n mouse wheel %d, %d", event.wheel.x, event.wheel.y);
-            widgetMouseWheelAll(&touch_data[TOUCHPOINT_MOUSE].point, -16 * event.wheel.y - event.wheel.x);
-            break;
-        case SDL_KEYUP:
-        case SDL_KEYDOWN:
-            DEBUG_PRINTF("\n keyboard %d", event.key.keysym.sym);
-            widgetKeyboardAll(&event);
-            if (SDLK_ESCAPE == event.key.keysym.sym) {
-                loop = SDL_FALSE;
-            }
-            break;
-        case SDL_QUIT:
-            loop = SDL_FALSE;
-            break;
-        case SDL_WINDOWEVENT:
-            break;
-        // default: {
-        //     static int counter = 0;
-        //     DEBUG_PRINTF("\n event %08X, %08X", event.type, counter++);
-        // } break;
-        } // switch event
-    } // event received
-    SDL_Delay(1);
-}
-
-// for bspDelayMs()
-void panelCriticalLoop() {
-    panelCoreLoop(SDL_FALSE);
-    if (SDL_FALSE == loop) {
-        // exit was requested
-        panelQuit();
-        // __asm volatile("ud2" ::: "memory");
-        __builtin_trap();
-    }
+    return ret;
 }
 
 // __attribute__((weak)) 
 uint32_t bspGetMs(void) { return SDL_GetTicks(); }
 
 // __attribute__((weak))
-void bspDelayMs(const uint32_t time_ms) {
+void bspDelayMs(const uint32_t time_ms)
+{
     SDL_assert(loop);
-    const uint32_t end = bspGetMs() + time_ms;
-    while (end < (volatile uint32_t)bspGetMs()) { panelCriticalLoop(); }
-    while (end > (volatile uint32_t)bspGetMs()) { panelCriticalLoop(); }
+    uint32_t time_now = bspGetMs();
+    const uint32_t end = time_now + time_ms;
+    while (end < time_now) { time_now = panelCriticalLoop(); }
+    while (end > time_now) { time_now = panelCriticalLoop(); }
 }
 
 int main(int argc, char* argv[])
@@ -385,23 +227,28 @@ int main(int argc, char* argv[])
     SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
     SDL_SetHint(SDL_HINT_MOUSE_TOUCH_EVENTS, "0");
 
-    // // display info
-    // for (int i = 0; i < SDL_GetNumVideoDisplays(); i++) {
-    //     SDL_DisplayMode m;
-    //     SDL_GetDesktopDisplayMode(i, &m);
-    //     DEBUG_PRINTF("\nDisplay %d: %d x %d, %d Hz", i, m.w, m.h, m.refresh_rate);
-    // }
+    // display info
+    unsigned fps_recp = 0;
+    for (int i = 0; i < SDL_GetNumVideoDisplays(); i++) {
+        SDL_DisplayMode m;
+        SDL_GetDesktopDisplayMode(i, &m);
+        DEBUG_PRINTF("\nDisplay %d: %d x %d, %d Hz", i, m.w, m.h, m.refresh_rate);
+        unsigned current_display_fps_recp = 1000 / m.refresh_rate;
+        if (current_display_fps_recp > fps_recp) {
+            fps_recp = current_display_fps_recp;
+        }
+    }
     // for (int i = 0; i < SDL_GetNumTouchDevices(); i++) { // returns 0 ((
     //     SDL_TouchID t = SDL_GetTouchDevice(i);
     //     DEBUG_PRINTF("\ntouch type %d: %d", i, SDL_GetTouchDeviceType(t));
     // }
 
-    screen = SDL_CreateWindow(PANEL_NAME,
+    SDL_Window* screen = SDL_CreateWindow(PANEL_NAME,
         SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
         PANEL_SIZE_X * PANEL_SCALE, PANEL_SIZE_Y * PANEL_SCALE, 0);
-    rend = SDL_CreateRenderer(screen, -1, SDL_RENDERER_PRESENTVSYNC);
-    surf = SDL_CreateRGBSurface(0, PANEL_SIZE_X, PANEL_SIZE_Y, 32, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
-    texture = SDL_CreateTextureFromSurface(rend, surf);
+    SDL_Renderer* rend = SDL_CreateRenderer(screen, -1, SDL_RENDERER_PRESENTVSYNC);
+    SDL_Surface* surf = SDL_CreateRGBSurface(0, PANEL_SIZE_X, PANEL_SIZE_Y, 32, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(rend, surf);
 
     panelInit();
     SDL_SetRenderDrawColor(rend,
@@ -409,16 +256,168 @@ int main(int argc, char* argv[])
         (panel.widget_color_panel >> 8) & 0xFF,
         panel.widget_color_panel & 0xFF,
         0);
+
+    WidgetTouchData touch_data[TOUCHPOINTS_TOTAL]; // touch + mouse
     SDL_memset(&touch_data, 0, sizeof(touch_data));
     for (unsigned i = 0; i < TOUCHPOINTS_TOTAL; i++) {
         touch_data[i].point.x = -1, touch_data[i].point.y = -1;
     }
 
-    loop = SDL_TRUE;
     panelConstruct(rend);
+    loop = SDL_TRUE;
+    SDL_Thread *fastLoopThread = SDL_CreateThread(panelFastLoopThread, "panelFastLoop", 0);
+    uint32_t render_time = 0;
     while (loop) {
-        panelCoreLoop(SDL_TRUE);
+        uint32_t clock = SDL_GetTicks();
+        if (clock - render_time < INT32_MAX) {
+            fps_counter++;
+            SDL_RenderClear(rend);
+            SDL_UpdateTexture(texture, 0, surf->pixels, surf->pitch);
+            SDL_RenderCopy(rend, texture, 0, 0);
+            widgetRedrawAll();
+            widgetRenderAll(rend);
+            SDL_RenderPresent(rend);
+            render_time = SDL_GetTicks() + fps_recp; // TODO: clock?
+        }
+        SDL_Event event;
+        if (0 != SDL_PollEvent(&event)) {
+            switch (event.type) {
+            // case SDL_POLLSENTINEL:
+            //     // end of event queue
+            //     break;
+            case SDL_MOUSEMOTION:
+                DEBUG_PRINTF("\n mousemotion %d, %d", event.motion.x, event.motion.y);
+                if (touch_data[TOUCHPOINT_MOUSE].drag) {
+                    int32_t pval = 0;
+                    pval += event.motion.xrel;
+                    int32_t ax = event.motion.yrel;
+                    if (ax < 0) {
+                        ax = -ax;
+                    }
+                    if (ax > 3) {
+                        pval -= event.motion.yrel * 4;
+                    }
+                    touch_data[TOUCHPOINT_MOUSE].drag(touch_data[TOUCHPOINT_MOUSE].instance, pval);
+                } else {
+                    touch_data[TOUCHPOINT_MOUSE].point.x = event.motion.x;
+                    touch_data[TOUCHPOINT_MOUSE].point.y = event.motion.y;
+                    widgetMouseMoveAll(touch_data, TOUCHPOINTS_TOTAL);
+                }
+                break;
+            case SDL_FINGERMOTION:
+                DEBUG_PRINTF("\n fingermotion %d, %6g, %6g", (int)event.tfinger.fingerId, event.tfinger.x, event.tfinger.y);
+                for (unsigned i = 0; i < MULTITOUCH_MAX_FINGERS; i++) {
+                    if (event.tfinger.fingerId == touch_data[TOUCHPOINT_FINGER(i)].finger) {
+                        if (touch_data[TOUCHPOINT_FINGER(i)].drag) {
+                            int32_t pval = 0;
+                            pval += (int)(event.tfinger.dx * (float)(PANEL_SIZE_X * PANEL_SCALE));
+                            int32_t ax = (int)(event.tfinger.dy * (float)(PANEL_SIZE_Y * PANEL_SCALE));
+                            if ((ax < -1) || (ax > 3)) {
+                                pval -= ax * 4;
+                            }
+                            touch_data[TOUCHPOINT_FINGER(i)].drag(touch_data[TOUCHPOINT_FINGER(i)].instance, pval);
+                        } else {
+                            touch_data[TOUCHPOINT_FINGER(i)].point.x = (int)(event.tfinger.x * (float)(PANEL_SIZE_X * PANEL_SCALE));
+                            touch_data[TOUCHPOINT_FINGER(i)].point.y = (int)(event.tfinger.y * (float)(PANEL_SIZE_Y * PANEL_SCALE));
+                            widgetMouseMoveAll(touch_data, TOUCHPOINTS_TOTAL);
+                        }
+                    }
+                }
+                break;
+            // case SDL_DOLLARGESTURE:
+            // case SDL_DOLLARRECORD:
+            // case SDL_MULTIGESTURE:
+            //     DEBUG_PRINTF("\n gesture");
+            //     // no gestures!
+            //     break;
+            case SDL_MOUSEBUTTONUP:
+                DEBUG_PRINTF("\n mouse release %d, %d", event.button.x, event.button.y);
+                if (touch_data[TOUCHPOINT_MOUSE].drag) {
+                    touch_data[TOUCHPOINT_MOUSE].drag = 0;
+                    SDL_SetRelativeMouseMode(SDL_FALSE);
+                    SDL_WarpMouseInWindow(screen, touch_data[TOUCHPOINT_MOUSE].point.x, touch_data[TOUCHPOINT_MOUSE].point.y);
+                } else if (SDL_TRUE == touch_data[TOUCHPOINT_MOUSE].is_pressed) {
+                    touch_data[TOUCHPOINT_MOUSE].is_pressed = SDL_FALSE;
+                    widgetMouseMoveAll(touch_data, TOUCHPOINTS_TOTAL);
+                }
+                break;
+            case SDL_FINGERUP:
+                DEBUG_PRINTF("\n finger release %d, %6g, %6g", (int)event.tfinger.fingerId, event.tfinger.x, event.tfinger.y);
+                for (unsigned i = 0; i < MULTITOUCH_MAX_FINGERS; i++) {
+                    unsigned tpos = TOUCHPOINT_FINGER(i);
+                    if (event.tfinger.fingerId == touch_data[tpos].finger) {
+                        touch_data[tpos].is_pressed = SDL_FALSE;
+                        touch_data[tpos].drag = 0;
+                        touch_data[tpos].point.x = -1;
+                        touch_data[tpos].point.y = -1;
+                        touch_data[tpos].finger = 0;
+                        widgetMouseMoveAll(touch_data, TOUCHPOINTS_TOTAL);
+                    }
+                }
+                // for (unsigned i = 0; i < TOUCHPOINTS_TOTAL; i++) {
+                //     DEBUG_PRINTF("\n %d: %d,%d", i, touch_data[i].point.x, touch_data[i].point.y);
+                // }
+                break;
+            case SDL_MOUSEBUTTONDOWN:
+                DEBUG_PRINTF("\n mouse press %d, %d", event.button.x, event.button.y);
+                widgetMouseClickAll(&touch_data[TOUCHPOINT_MOUSE]);
+                if (touch_data[TOUCHPOINT_MOUSE].drag) {
+                    SDL_SetRelativeMouseMode(SDL_TRUE);
+                } else {
+                    touch_data[TOUCHPOINT_MOUSE].is_pressed = SDL_TRUE;
+                }
+                break;
+            case SDL_FINGERDOWN:
+                DEBUG_PRINTF("\n finger press %d, %6g, %6g", (int)event.tfinger.fingerId, event.tfinger.x, event.tfinger.y);
+                for (unsigned i = 0; i < MULTITOUCH_MAX_FINGERS; i++) {
+                    unsigned tpos = TOUCHPOINT_FINGER(i);
+                    if (0 == touch_data[tpos].finger) {
+                        touch_data[tpos].finger = event.tfinger.fingerId;
+                        touch_data[tpos].point.x = (int)(event.tfinger.x * (float)(PANEL_SIZE_X * PANEL_SCALE));
+                        touch_data[tpos].point.y = (int)(event.tfinger.y * (float)(PANEL_SIZE_Y * PANEL_SCALE));
+                        touch_data[tpos].drag = 0;
+                        widgetMouseClickAll(&touch_data[tpos]);
+                        if (0 == touch_data[tpos].drag) {
+                            touch_data[tpos].is_pressed = SDL_TRUE;
+                        }
+                        break;
+                    }
+                }
+                // for (unsigned i = 0; i < TOUCHPOINTS_TOTAL; i++) {
+                //     DEBUG_PRINTF("\n %d: %d,%d", i, touch_data[i].point.x, touch_data[i].point.y);
+                // }
+                break;
+            case SDL_MOUSEWHEEL:
+                DEBUG_PRINTF("\n mouse wheel %d, %d", event.wheel.x, event.wheel.y);
+                widgetMouseWheelAll(&touch_data[TOUCHPOINT_MOUSE].point, -16 * event.wheel.y - event.wheel.x);
+                break;
+            case SDL_KEYUP:
+            case SDL_KEYDOWN:
+                DEBUG_PRINTF("\n keyboard %d", event.key.keysym.sym);
+                widgetKeyboardAll(&event);
+                if (SDLK_ESCAPE == event.key.keysym.sym) {
+                    loop = SDL_FALSE;
+                }
+                break;
+            case SDL_QUIT:
+                loop = SDL_FALSE;
+                break;
+            case SDL_WINDOWEVENT:
+                break;
+            // default: {
+            //     static int counter = 0;
+            //     DEBUG_PRINTF("\n event %08X, %08X", event.type, counter++);
+            // } break;
+            } // switch event
+        } // event received
+        SDL_Delay(1);
     }
-    panelQuit();
+    SDL_WaitThread(fastLoopThread, &ret);
+    widgetFreeAll();
+    SDL_DestroyTexture(texture);
+    SDL_FreeSurface(surf);
+    SDL_DestroyRenderer(rend);
+    SDL_DestroyWindow(screen);
+    SDL_Quit();
     return ret;
 }
