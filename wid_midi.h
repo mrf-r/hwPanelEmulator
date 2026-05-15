@@ -14,22 +14,22 @@
  version2 - with select menu ??
 */
 
-#define VIDMIDI_NAMELENGTH 32
+#define WIDMIDI_NAMELENGTH 32
 
 typedef enum {
-    VMIDI_OFF = 0,
-    VMIDI_NOTFOUND,
-    VMIDI_ERROR_PM,
-    VMIDI_ERROR_SER,
-    VMIDI_ACTIVE_PM,
-    VMIDI_ACTIVE_SER,
+    WMIDI_OFF = 0,
+    WMIDI_NOTFOUND,
+    WMIDI_ERROR_PM,
+    WMIDI_ERROR_SER,
+    WMIDI_ACTIVE_PM,
+    WMIDI_ACTIVE_SER,
 } WidMidiStatus;
 
 typedef struct {
     Widget v;
     uint8_t pointed;
-    char name_in[VIDMIDI_NAMELENGTH];
-    char name_out[VIDMIDI_NAMELENGTH];
+    char name_in[WIDMIDI_NAMELENGTH];
+    char name_out[WIDMIDI_NAMELENGTH];
     uint32_t baud_virtual;
     uint32_t baud_physical_serial;
     // PortMidiStream* pm_input;

@@ -32,25 +32,25 @@ static void wmpmStart(WidgetMidi* v)
 
             WMIDI_PRINTF("\n midi: %d - %s", dev, device_info->name);
 
-            if ((VMIDI_NOTFOUND == v->status_in) && (device_info->input)) {
+            if ((WMIDI_NOTFOUND == v->status_in) && (device_info->input)) {
                 if (SDL_strstr(device_info->name, v->name_in)) {
                     if (0 == Pm_OpenInput((PortMidiStream**)&v->inst_input, dev, NULL, 256, wmpmTime, NULL)) {
-                        v->status_in = VMIDI_ACTIVE_PM;
-                        SDL_strlcpy(v->name_in, device_info->name, VIDMIDI_NAMELENGTH - 2);
+                        v->status_in = WMIDI_ACTIVE_PM;
+                        SDL_strlcpy(v->name_in, device_info->name, WIDMIDI_NAMELENGTH - 2);
                         WMIDI_PRINTF("\n opened in: %d - %s", dev, device_info->name);
                     } else {
-                        v->status_in = VMIDI_ERROR_PM;
+                        v->status_in = WMIDI_ERROR_PM;
                         v->inst_input = 0;
                     }
                 }
-            } else if ((VMIDI_NOTFOUND == v->status_out) && (device_info->output)) {
+            } else if ((WMIDI_NOTFOUND == v->status_out) && (device_info->output)) {
                 if (SDL_strstr(device_info->name, v->name_out)) {
                     if (0 == Pm_OpenOutput((PortMidiStream**)&v->inst_output, dev, NULL, 256, wmpmTime, NULL, 0)) {
-                        v->status_out = VMIDI_ACTIVE_PM;
-                        SDL_strlcpy(v->name_out, device_info->name, VIDMIDI_NAMELENGTH - 2);
+                        v->status_out = WMIDI_ACTIVE_PM;
+                        SDL_strlcpy(v->name_out, device_info->name, WIDMIDI_NAMELENGTH - 2);
                         WMIDI_PRINTF("\n opened out: %d - %s", dev, device_info->name);
                     } else {
-                        v->status_out = VMIDI_ERROR_PM;
+                        v->status_out = WMIDI_ERROR_PM;
                         v->inst_output = 0;
                     }
                 }
@@ -61,15 +61,15 @@ static void wmpmStart(WidgetMidi* v)
 
 static void wmpmStop(WidgetMidi* v)
 {
-    if (VMIDI_ACTIVE_PM == v->status_in) {
+    if (WMIDI_ACTIVE_PM == v->status_in) {
         Pm_Close((PortMidiStream*)v->inst_input);
         v->inst_input = 0;
-        v->status_in = VMIDI_OFF;
+        v->status_in = WMIDI_OFF;
     }
-    if (VMIDI_ACTIVE_PM == v->status_out) {
+    if (WMIDI_ACTIVE_PM == v->status_out) {
         Pm_Close((PortMidiStream*)v->inst_output);
         v->inst_output = 0;
-        v->status_out = VMIDI_OFF;
+        v->status_out = WMIDI_OFF;
     }
     Pm_Terminate();
 }
@@ -175,7 +175,7 @@ static inline void pmSyxOutCompose(WidgetMidi* v, uint8_t byte)
 
 static void wmpmProcessIn(WidgetMidi* v, uint32_t clock)
 {
-    SDL_assert(VMIDI_ACTIVE_PM == v->status_in);
+    SDL_assert(WMIDI_ACTIVE_PM == v->status_in);
     (void)clock;
     
     PmEvent rx;
@@ -188,7 +188,7 @@ static void wmpmProcessIn(WidgetMidi* v, uint32_t clock)
 
 static void wmpmProcessOut(WidgetMidi* v, const uint32_t clock, const uint32_t bytes_in_this_timeslot)
 {
-    SDL_assert(VMIDI_ACTIVE_PM == v->status_in);
+    SDL_assert(WMIDI_ACTIVE_PM == v->status_in);
     (void)clock;
     MidiMessageT m;
     uint32_t bytes_limit = bytes_in_this_timeslot;

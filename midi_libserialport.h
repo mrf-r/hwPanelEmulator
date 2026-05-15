@@ -61,22 +61,22 @@ static void wmlsStart(WidgetMidi* v)
             WMIDI_PRINTF("\n ser: %s", port_desc);
             //
 
-            if ((VMIDI_NOTFOUND == v->status_in) && (SDL_strstr(port_desc, v->name_in))) {
+            if ((WMIDI_NOTFOUND == v->status_in) && (SDL_strstr(port_desc, v->name_in))) {
                 if (SP_OK != sp_copy_port(port, (struct sp_port**)&v->inst_input))
                     goto ser_in_error;
                 if (SP_OK != sp_open((struct sp_port*)v->inst_input, SP_MODE_READ_WRITE))
                     goto ser_in_error;
                 if (SP_OK != sp_set_config((struct sp_port*)v->inst_input, config))
                     goto ser_in_error;
-                v->status_in = VMIDI_ACTIVE_SER;
-                SDL_strlcpy(v->name_in, port_desc, VIDMIDI_NAMELENGTH - 2);
+                v->status_in = WMIDI_ACTIVE_SER;
+                SDL_strlcpy(v->name_in, port_desc, WIDMIDI_NAMELENGTH - 2);
                 if (0) {
                 ser_in_error:
                     v->inst_input = 0;
-                    v->status_in = VMIDI_ERROR_SER;
+                    v->status_in = WMIDI_ERROR_SER;
                 }
             }
-            if ((VMIDI_NOTFOUND == v->status_out) && (SDL_strstr(port_desc, v->name_out))) {
+            if ((WMIDI_NOTFOUND == v->status_out) && (SDL_strstr(port_desc, v->name_out))) {
                 char* name_this = sp_get_port_name(port);
                 char* name_in = "==undefined==";
                 if (v->inst_input)
@@ -84,8 +84,8 @@ static void wmlsStart(WidgetMidi* v)
                 if (0 == SDL_strcmp(name_in, name_this)) {
                     // same port
                     v->inst_output = v->inst_input;
-                    v->status_out = VMIDI_ACTIVE_SER;
-                    SDL_strlcpy(v->name_out, port_desc, VIDMIDI_NAMELENGTH - 2);
+                    v->status_out = WMIDI_ACTIVE_SER;
+                    SDL_strlcpy(v->name_out, port_desc, WIDMIDI_NAMELENGTH - 2);
                 } else {
                     // open another one for output
                     if (SP_OK != sp_copy_port(port, (struct sp_port**)&v->inst_output))
@@ -94,12 +94,12 @@ static void wmlsStart(WidgetMidi* v)
                         goto ser_out_error;
                     if (SP_OK != sp_set_config((struct sp_port*)v->inst_output, config))
                         goto ser_out_error;
-                    v->status_out = VMIDI_ACTIVE_SER;
-                    SDL_strlcpy(v->name_out, port_desc, VIDMIDI_NAMELENGTH - 2);
+                    v->status_out = WMIDI_ACTIVE_SER;
+                    SDL_strlcpy(v->name_out, port_desc, WIDMIDI_NAMELENGTH - 2);
                     if (0) {
                     ser_out_error:
                         v->inst_output = 0;
-                        v->status_out = VMIDI_ERROR_SER;
+                        v->status_out = WMIDI_ERROR_SER;
                     }
                 }
             }
@@ -108,11 +108,11 @@ static void wmlsStart(WidgetMidi* v)
     sp_free_config(config);
     sp_free_port_list(port_list);
 
-    if (VMIDI_ACTIVE_SER == v->status_in) {
+    if (WMIDI_ACTIVE_SER == v->status_in) {
         WMIDI_PRINTF("\n pm in active");
         midiInUartInit(&midi_uart_in_cx);
     }
-    if (VMIDI_ACTIVE_SER == v->status_out) {
+    if (WMIDI_ACTIVE_SER == v->status_out) {
         WMIDI_PRINTF("\n pm out active");
         midiOutUartInit(&midi_uart_out);
         out_is_busy = 0;
@@ -122,17 +122,17 @@ static void wmlsStart(WidgetMidi* v)
 
 static void wmlsStop(WidgetMidi* v)
 {
-    if (VMIDI_ACTIVE_SER == v->status_in) {
+    if (WMIDI_ACTIVE_SER == v->status_in) {
         sp_close((struct sp_port*)v->inst_input);
         sp_free_port((struct sp_port*)v->inst_input);
         v->inst_input = 0;
-        v->status_in = VMIDI_OFF;
+        v->status_in = WMIDI_OFF;
     }
-    if (VMIDI_ACTIVE_SER == v->status_out) {
+    if (WMIDI_ACTIVE_SER == v->status_out) {
         sp_close((struct sp_port*)v->inst_output);
         sp_free_port((struct sp_port*)v->inst_output);
         v->inst_output = 0;
-        v->status_out = VMIDI_OFF;
+        v->status_out = WMIDI_OFF;
     }
 }
 
@@ -140,7 +140,7 @@ static void wmlsStop(WidgetMidi* v)
 
 static void wmlsProcessIn(WidgetMidi* v, uint32_t clock)
 {
-    SDL_assert(VMIDI_ACTIVE_SER == v->status_in);
+    SDL_assert(WMIDI_ACTIVE_SER == v->status_in);
     (void)clock;
     midiInUartTap(&midi_uart_in_cx, MIDI_CN_USB_DEVICE);
     uint8_t read_buffer[WMLS_READ_BUFFER_SIZE];
@@ -155,7 +155,7 @@ static void wmlsProcessIn(WidgetMidi* v, uint32_t clock)
 
 static void wmlsProcessOut(WidgetMidi* v, const uint32_t clock, const uint32_t bytes_in_this_timeslot)
 {
-    SDL_assert(VMIDI_ACTIVE_SER == v->status_out);
+    SDL_assert(WMIDI_ACTIVE_SER == v->status_out);
     (void)clock;
     midiOutUartTap(&midi_uart_out);
     // uart interrupt emulation

@@ -15,7 +15,7 @@ The idea is to have Arduino-like simplicity in building control surfaces and dsp
 - `void panelConstruct(SDL_Renderer* rend)` - init and position various widgets you need on your surface
 - `void appStart()` - application init/startup procedures, welcome screens, etc
 - `void appLoop(uint32_t clock)` - application main loop - capture controls from panel widgets, perform midi processing and routing, etc. Max call rate is approximately 500 Hz (see framecounter)
-- `PanelAudioProcessCallbackT` - A simplified callback for audio block processing for audio widget. The call rate depends on the block size and sample rate parameters. By default, it is placed in panelCriticalLoop (main app loop) with `PANEL_AUDIO_HW_BUFFER_SIZE` buffer size. It may be moved directly to the portaudio callback via `PANEL_AUDIO_NONBUFFERED_CALLS` build define to reduce the latency.
+- `PanelAudioProcessCallbackT` - A simplified callback for audio block processing for audio widget. The call rate depends on the block size and sample rate parameters. By default, it is placed in panelCriticalLoop (main app loop) with `WIDAUDIO_HW_BUFFER_SIZE` buffer size. It may be moved directly to the portaudio callback via `PANEL_AUDIO_NONBUFFERED_CALLS` build define to reduce the latency.
 
 ### Widgets:
 

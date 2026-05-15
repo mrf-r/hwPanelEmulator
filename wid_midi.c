@@ -13,8 +13,8 @@ MidiOutPortContextT midi_out_port; // nonstatic
 
 static void wMidiStart(WidgetMidi* v)
 {
-    v->status_in = VMIDI_NOTFOUND;
-    v->status_out = VMIDI_NOTFOUND;
+    v->status_in = WMIDI_NOTFOUND;
+    v->status_out = WMIDI_NOTFOUND;
 
     wmpmStart(v);
     wmlsStart(v);
@@ -34,15 +34,15 @@ static void wMidiRedraw(void* wid)
     SDL_FillRect(v->v.surface, 0, 0);
     drawOutline(&v->v, v->pointed ? panel.widget_color_pointed : panel.widget_color_released);
     if (v->pointed) {
-        v->name_in[VIDMIDI_NAMELENGTH - 1] = 0;
-        v->name_out[VIDMIDI_NAMELENGTH - 1] = 0;
+        v->name_in[WIDMIDI_NAMELENGTH - 1] = 0;
+        v->name_out[WIDMIDI_NAMELENGTH - 1] = 0;
         uint32_t color = panel.widget_color_pressed;
-        if ((VMIDI_ACTIVE_PM == v->status_in) || (VMIDI_ACTIVE_SER == v->status_in)) {
+        if ((WMIDI_ACTIVE_PM == v->status_in) || (WMIDI_ACTIVE_SER == v->status_in)) {
             color = panel.widget_color_released;
         }
         drawString(&v->v, 2, 2, v->name_in, color);
         color = panel.widget_color_pressed;
-        if ((VMIDI_ACTIVE_PM == v->status_out) || (VMIDI_ACTIVE_SER == v->status_out)) {
+        if ((WMIDI_ACTIVE_PM == v->status_out) || (WMIDI_ACTIVE_SER == v->status_out)) {
             color = panel.widget_color_released;
         }
         drawString(&v->v, 2, 10, v->name_out, color);
@@ -55,9 +55,9 @@ static void wMidiRedraw(void* wid)
 static void wMidiProcess(void* wid, uint32_t clock)
 {
     WidgetMidi* v = (WidgetMidi*)wid;
-    if (VMIDI_ACTIVE_PM == v->status_in) {
+    if (WMIDI_ACTIVE_PM == v->status_in) {
         wmpmProcessIn(v, clock);
-    } else if (VMIDI_ACTIVE_SER == v->status_in) {
+    } else if (WMIDI_ACTIVE_SER == v->status_in) {
         wmlsProcessIn(v, clock);
     }
     // limit the output flow
@@ -71,9 +71,9 @@ static void wMidiProcess(void* wid, uint32_t clock)
     const uint32_t bytes_in_this_timeslot = time_delta_us / byte_time_us;
     v->proc_prev_remaining_us = time_delta_us - bytes_in_this_timeslot * byte_time_us;
 
-    if (VMIDI_ACTIVE_PM == v->status_out) {
+    if (WMIDI_ACTIVE_PM == v->status_out) {
         wmpmProcessOut(v, clock, bytes_in_this_timeslot);
-    } else if (VMIDI_ACTIVE_SER == v->status_out) {
+    } else if (WMIDI_ACTIVE_SER == v->status_out) {
         wmlsProcessOut(v, clock, bytes_in_this_timeslot);
     }
     if ((v->counter_in_prev != v->counter_in) || (v->counter_out_prev != v->counter_out)) {
@@ -138,13 +138,13 @@ void wMidiInit(
     SDL_assert(0 == already_inited);
     already_inited++; // singletone
 
-    SDL_strlcpy(v->name_in, dev_name_in, VIDMIDI_NAMELENGTH);
-    SDL_strlcpy(v->name_out, dev_name_out, VIDMIDI_NAMELENGTH);
+    SDL_strlcpy(v->name_in, dev_name_in, WIDMIDI_NAMELENGTH);
+    SDL_strlcpy(v->name_out, dev_name_out, WIDMIDI_NAMELENGTH);
     v->baud_virtual = baud_virtual;
     v->baud_physical_serial = baud_serial;
 
     widgetInit(&v->v, (void*)v, &wMidiApi, x, y, 40, 19, 1, rend);
-    v->status_in = v->status_out = VMIDI_OFF;
+    v->status_in = v->status_out = WMIDI_OFF;
     v->inst_input = v->inst_output = 0;
     v->counter_in = v->counter_in_prev = 0;
     v->counter_out = v->counter_out_prev = 0;

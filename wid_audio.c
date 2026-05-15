@@ -25,19 +25,19 @@ static int pa_callback(
     v->lastblocksize = framesPerBuffer;
 
 #ifndef PANEL_AUDIO_NONBUFFERED_CALLS
-    uint32_t pos = v->audio_tail % (PANEL_AUDIO_HW_BUFFER_SIZE * 2);
+    uint32_t pos = v->audio_tail % (WIDAUDIO_HW_BUFFER_SIZE * 2);
     for (unsigned i = 0; i < framesPerBuffer; i++) {
         memcpy(
-            &v->audio_in[pos * PANEL_AUDIO_HW_IN_CNANNELS],
-            &((const WAudioT*)inputBuffer)[i * PANEL_AUDIO_HW_IN_CNANNELS],
-            sizeof(WAudioT) * PANEL_AUDIO_HW_IN_CNANNELS
+            &v->audio_in[pos * WIDAUDIO_HW_IN_CNANNELS],
+            &((const WAudioT*)inputBuffer)[i * WIDAUDIO_HW_IN_CNANNELS],
+            sizeof(WAudioT) * WIDAUDIO_HW_IN_CNANNELS
         );
         memcpy(
-            &((WAudioT*)outputBuffer)[i * PANEL_AUDIO_HW_OUT_CNANNELS],
-            &v->audio_out[pos * PANEL_AUDIO_HW_OUT_CNANNELS],
-            sizeof(WAudioT) * PANEL_AUDIO_HW_OUT_CNANNELS
+            &((WAudioT*)outputBuffer)[i * WIDAUDIO_HW_OUT_CNANNELS],
+            &v->audio_out[pos * WIDAUDIO_HW_OUT_CNANNELS],
+            sizeof(WAudioT) * WIDAUDIO_HW_OUT_CNANNELS
         );
-        pos = (pos + 1) % (PANEL_AUDIO_HW_BUFFER_SIZE * 2);
+        pos = (pos + 1) % (WIDAUDIO_HW_BUFFER_SIZE * 2);
     }
     v->audio_tail = v->audio_tail + framesPerBuffer;
 #else // PANEL_AUDIO_NONBUFFERED_CALLS
@@ -81,7 +81,7 @@ static void wAudioRedraw(void* wid) // TODO:
     } else {
         if ((!v->errorcounter) || (0 == v->error_last)) {
             uint32_t color = panel.widget_color_pressed;
-            if (VAUDIO_ACTIVE == v->status) {
+            if (WAUDIO_ACTIVE == v->status) {
                 color = panel.widget_color_released;
             }
             drawString(&v->v, 2, 2, v->name_in, color);
@@ -105,30 +105,30 @@ static void wAudioProcess(void* wid, uint32_t clock)
 #ifndef PANEL_AUDIO_NONBUFFERED_CALLS
     // TODO: time analysis
     while ((v->audio_tail - v->audio_head) > v->blocksize) {
-        uint32_t current_app_pos = (v->audio_head) % (PANEL_AUDIO_HW_BUFFER_SIZE * 2);
-        uint32_t new_app_pos = (v->audio_head + v->blocksize) % (PANEL_AUDIO_HW_BUFFER_SIZE * 2);
+        uint32_t current_app_pos = (v->audio_head) % (WIDAUDIO_HW_BUFFER_SIZE * 2);
+        uint32_t new_app_pos = (v->audio_head + v->blocksize) % (WIDAUDIO_HW_BUFFER_SIZE * 2);
         if (new_app_pos < v->blocksize) {
             // data should be linear for the callback, so we use buffer extension and additional input de-wrapping
             // and output wrapping steps
             memcpy(
-                &v->audio_in[PANEL_AUDIO_HW_BUFFER_SIZE * 2 * PANEL_AUDIO_HW_IN_CNANNELS],
+                &v->audio_in[WIDAUDIO_HW_BUFFER_SIZE * 2 * WIDAUDIO_HW_IN_CNANNELS],
                 &v->audio_in[0],
-                sizeof(WAudioT) * PANEL_AUDIO_HW_IN_CNANNELS * (new_app_pos + 1)
+                sizeof(WAudioT) * WIDAUDIO_HW_IN_CNANNELS * (new_app_pos + 1)
             );
             v->process_callback(
-                &v->audio_in[current_app_pos * PANEL_AUDIO_HW_IN_CNANNELS],
-                &v->audio_out[current_app_pos * PANEL_AUDIO_HW_OUT_CNANNELS],
+                &v->audio_in[current_app_pos * WIDAUDIO_HW_IN_CNANNELS],
+                &v->audio_out[current_app_pos * WIDAUDIO_HW_OUT_CNANNELS],
                 v->blocksize
             );
             memcpy(
                 v->audio_out,
-                &v->audio_out[PANEL_AUDIO_HW_BUFFER_SIZE * 2 * PANEL_AUDIO_HW_OUT_CNANNELS],
-                sizeof(WAudioT) * PANEL_AUDIO_HW_OUT_CNANNELS * (new_app_pos + 1)
+                &v->audio_out[WIDAUDIO_HW_BUFFER_SIZE * 2 * WIDAUDIO_HW_OUT_CNANNELS],
+                sizeof(WAudioT) * WIDAUDIO_HW_OUT_CNANNELS * (new_app_pos + 1)
             );
         } else {
             v->process_callback(
-                &v->audio_in[current_app_pos * PANEL_AUDIO_HW_IN_CNANNELS],
-                &v->audio_out[current_app_pos * PANEL_AUDIO_HW_OUT_CNANNELS],
+                &v->audio_in[current_app_pos * WIDAUDIO_HW_IN_CNANNELS],
+                &v->audio_out[current_app_pos * WIDAUDIO_HW_OUT_CNANNELS],
                 v->blocksize
             );
         }
@@ -142,9 +142,9 @@ static void wAudioTerminate(void* wid)
     WidgetAudio* v = (WidgetAudio*)wid;
     WAUDIO_PRINTF("\n wAudioTerminate");
 
-    if (VAUDIO_OFF != v->status) {
+    if (WAUDIO_OFF != v->status) {
         PaError err;
-        if ((VAUDIO_ACTIVE == v->status) || (VAUDIO_ERROR == v->status)) {
+        if ((WAUDIO_ACTIVE == v->status) || (WAUDIO_ERROR == v->status)) {
             err = Pa_StopStream((PaStream*)v->instance);
             WAUDIO_PRINTF("\nPa_StopStream: %s", Pa_GetErrorText(err));
             // err = Pa_AbortStream( stream ); // immediately
@@ -188,7 +188,7 @@ static WidgetApi wAudioApi = {
 };
 
 #ifndef PANEL_AUDIO_NONBUFFERED_CALLS
-    #define BLOCKSIZE PANEL_AUDIO_HW_BUFFER_SIZE
+    #define BLOCKSIZE WIDAUDIO_HW_BUFFER_SIZE
 #else
     #define BLOCKSIZE v->blocksize
 #endif
@@ -207,23 +207,23 @@ void wAudioInit(
     memset(v, 0, sizeof(WidgetAudio));
 
     if (dev_name_in)
-        SDL_strlcpy(v->name_in, dev_name_in, VIDAUDIO_NAMELENGTH);
+        SDL_strlcpy(v->name_in, dev_name_in, WIDAUDIO_NAMELENGTH);
     else
         v->name_in[0] = 0;
     if (dev_name_out)
-        SDL_strlcpy(v->name_out, dev_name_out, VIDAUDIO_NAMELENGTH);
+        SDL_strlcpy(v->name_out, dev_name_out, WIDAUDIO_NAMELENGTH);
     else
         v->name_out[0] = 0;
     v->samplerate = samplerate;
  
 #ifndef PANEL_AUDIO_NONBUFFERED_CALLS
-    SDL_assert(blocksize < PANEL_AUDIO_HW_BUFFER_SIZE);
+    SDL_assert(blocksize < WIDAUDIO_HW_BUFFER_SIZE);
 #endif
     v->blocksize = blocksize;
     v->process_callback = process_callback;
 
     widgetInit(&v->v, (void*)v, &wAudioApi, x, y, 40, 19, 1, rend);
-    v->status = VAUDIO_OFF;
+    v->status = WAUDIO_OFF;
     v->instance = 0;
     v->errorcounter = v->errorcounter_prev = v->error_last = 0;
     v->blockcounter = 0;
@@ -237,8 +237,8 @@ void wAudioInit(
             // names are not defined, use default devices
             err = Pa_OpenDefaultStream(
                 (PaStream**)&v->instance,
-                PANEL_AUDIO_HW_IN_CNANNELS,
-                PANEL_AUDIO_HW_OUT_CNANNELS,
+                WIDAUDIO_HW_IN_CNANNELS,
+                WIDAUDIO_HW_OUT_CNANNELS,
                 sizeof(WAudioT) == 2 ? paInt16 : paInt32,
                 v->samplerate,
                 BLOCKSIZE,
@@ -250,14 +250,14 @@ void wAudioInit(
                 err = Pa_StartStream((PaStream*)v->instance);
                 WAUDIO_PRINTF("\nPa_StartStream: %s", Pa_GetErrorText(err));
             }
-            v->status = (0 == err) ? VAUDIO_ACTIVE : VAUDIO_ERROR;
+            v->status = (0 == err) ? WAUDIO_ACTIVE : WAUDIO_ERROR;
             // get names
             const PaDeviceIndex din = Pa_GetDefaultInputDevice();
             const PaDeviceInfo* din_info = Pa_GetDeviceInfo(din);
             const PaDeviceIndex dout = Pa_GetDefaultOutputDevice();
             const PaDeviceInfo* dout_info = Pa_GetDeviceInfo(dout);
-            SDL_strlcpy(v->name_in, din_info->name, VIDAUDIO_NAMELENGTH);
-            SDL_strlcpy(v->name_out, dout_info->name, VIDAUDIO_NAMELENGTH);
+            SDL_strlcpy(v->name_in, din_info->name, WIDAUDIO_NAMELENGTH);
+            SDL_strlcpy(v->name_out, dout_info->name, WIDAUDIO_NAMELENGTH);
             WAUDIO_PRINTF(
                 "\n    in: %d, latency: %g, channels: %d, name: %s",
                 din, din_info->defaultLowInputLatency, din_info->maxInputChannels, din_info->name);
@@ -266,19 +266,19 @@ void wAudioInit(
                 dout, dout_info->defaultLowOutputLatency, dout_info->maxOutputChannels, dout_info->name);
         } else {
             // names were defined. let's find them in devices list
-            v->status = VAUDIO_NOTFOUND;
+            v->status = WAUDIO_NOTFOUND;
             const PaDeviceIndex num_devices = Pa_GetDeviceCount();
 
             if (num_devices > 0) {
                 PaStreamParameters stream_in;
                 stream_in.device = -1;
-                stream_in.channelCount = PANEL_AUDIO_HW_IN_CNANNELS;
+                stream_in.channelCount = WIDAUDIO_HW_IN_CNANNELS;
                 stream_in.sampleFormat = sizeof(WAudioT) == 2 ? paInt16 : paInt32;
                 stream_in.suggestedLatency = 10;
                 stream_in.hostApiSpecificStreamInfo = NULL;
                 PaStreamParameters stream_out;
                 stream_out.device = -1;
-                stream_out.channelCount = PANEL_AUDIO_HW_OUT_CNANNELS;
+                stream_out.channelCount = WIDAUDIO_HW_OUT_CNANNELS;
                 stream_out.sampleFormat = sizeof(WAudioT) == 2 ? paInt16 : paInt32;
                 stream_out.suggestedLatency = 10;
                 stream_out.hostApiSpecificStreamInfo = NULL;
@@ -310,21 +310,21 @@ void wAudioInit(
                 }
                 // start
                 if ((-1 == stream_in.device) || (-1 == stream_out.device)) {
-                    v->status = VAUDIO_NOTFOUND;
+                    v->status = WAUDIO_NOTFOUND;
                     WAUDIO_PRINTF("\n Not found");
                 } else {
                     WAUDIO_PRINTF("\nFound in: %d, out: %d", stream_in.device, stream_out.device);
                     const PaDeviceInfo* din_info = Pa_GetDeviceInfo(stream_in.device);
                     const PaDeviceInfo* dout_info = Pa_GetDeviceInfo(stream_out.device);
-                    SDL_strlcpy(v->name_in, din_info->name, VIDAUDIO_NAMELENGTH - 2);
-                    SDL_strlcpy(v->name_out, dout_info->name, VIDAUDIO_NAMELENGTH - 2);
+                    SDL_strlcpy(v->name_in, din_info->name, WIDAUDIO_NAMELENGTH - 2);
+                    SDL_strlcpy(v->name_out, dout_info->name, WIDAUDIO_NAMELENGTH - 2);
                     err = Pa_OpenStream((PaStream**)&v->instance, &stream_in, &stream_out, v->samplerate, BLOCKSIZE, paNoFlag, pa_callback, v);
                     WAUDIO_PRINTF("\nPa_OpenStream: %s", Pa_GetErrorText(err));
                     if (0 == err) {
                         err = Pa_StartStream((PaStream*)v->instance);
                         WAUDIO_PRINTF("\nPa_StartStream: %s", Pa_GetErrorText(err));
                     }
-                    v->status = (0 == err) ? VAUDIO_ACTIVE : VAUDIO_ERROR;
+                    v->status = (0 == err) ? WAUDIO_ACTIVE : WAUDIO_ERROR;
                 }
             }
         }
