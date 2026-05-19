@@ -35,6 +35,7 @@
 void panelConstruct(SDL_Renderer* rend);
 void appStart(void);
 void appLoop(uint32_t clock);
+void appCriticalLoop(uint32_t clock);
 // ---
 
 uint32_t lcg;
@@ -178,11 +179,17 @@ static inline void widgetMouseWheelAll(SDL_Point* pos, int32_t delta)
 static volatile SDL_bool loop = SDL_FALSE;
 volatile uint32_t fps_counter;
 
+__attribute__((weak)) void appCriticalLoop(uint32_t clock)
+{
+    (void) clock;
+}
+
 // for bspDelayMs() and other blocking app calls
 uint32_t panelCriticalLoop()
 {
     const uint32_t clock = SDL_GetTicks();
     widgetProcessAll(clock);
+    appCriticalLoop(clock);
     // if (SDL_FALSE == loop) {
     //     // to kill user delay loop while exit was requested
     //     // __asm volatile("ud2" ::: "memory");
