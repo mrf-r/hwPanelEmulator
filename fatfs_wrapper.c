@@ -19,9 +19,9 @@
 // TODO: SDL_GetBasePath
 #endif
 
-#include <stdio.h>
-#define FF_PRINTF printf
-// #define FF_PRINTF(...)
+#ifndef FF_PRINTF
+#define FF_PRINTF(...)
+#endif
 
 static const char *program_root[FF_VOLUMES] = FF_VOLUME_ROOT;
 

@@ -3,9 +3,9 @@
 #include <portaudio.h>
 #include <string.h>
 
-#include <stdio.h>
-#define WAUDIO_PRINTF printf
-// #define WAUDIO_PRINTF(...)
+#ifndef WAUDIO_PRINTF
+#define WAUDIO_PRINTF(...)
+#endif
 
 static int pa_callback(
     const void* inputBuffer,
@@ -65,7 +65,8 @@ static void portaudioTerminateGlobal()
     if (0 == portaudio_requests) {
         PaError err;
         err = Pa_Terminate();
-        printf("\nPa_Terminate: %s", Pa_GetErrorText(err));
+        WAUDIO_PRINTF("\nPa_Terminate: %s", Pa_GetErrorText(err));
+        (void)err;
     }
 }
 
@@ -152,6 +153,7 @@ static void wAudioTerminate(void* wid)
             WAUDIO_PRINTF("\nPa_CloseStream: %s", Pa_GetErrorText(err));
         }
         portaudioTerminateGlobal();
+        (void)err;
     }
 }
 

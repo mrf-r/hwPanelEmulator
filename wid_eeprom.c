@@ -3,8 +3,10 @@
 #include <SDL.h>
 #include <stdio.h>
 #include <time.h>
-#define WEEPROM_PRINTF printf
-// #define WEEPROM_PRINTF(...)
+
+#ifndef WEEPROM_PRINTF
+#define WEEPROM_PRINTF(...)
+#endif
 
 #define EEPROM_HEADER_SIZE 256
 #define EEPROM_FILEID_SIZE 32

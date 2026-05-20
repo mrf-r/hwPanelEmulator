@@ -41,8 +41,9 @@ void appCriticalLoop(uint32_t clock);
 uint32_t lcg;
 Panel panel;
 
+#ifndef DEBUG_PRINTF
 #define DEBUG_PRINTF(...)
-// #define DEBUG_PRINTF printf
+#endif
 
 #ifndef MULTITOUCH_MAX_FINGERS
 #define MULTITOUCH_MAX_FINGERS 4

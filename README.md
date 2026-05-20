@@ -41,6 +41,7 @@ Should be compatible with Arduino MIDI over serial.
 
 ### TODO:
 
+- cmake -mconsole and DEBUG build
 - .process methods are now in separate thread, is it still thread-safe?
     - main sdl thread: 60Hz - capture controls, redraw elements(need_redraw)
     - fastloop: process controls, redraw commands(need_redraw), bspLedSet
@@ -49,8 +50,6 @@ Should be compatible with Arduino MIDI over serial.
 - midi select device or use default device
 - test midi over serial
 - config file
-- audio buffered not working
 - cycle measurements
 - put .process of some widgets to events?
-- separate thread for mainloop? (https://github.com/libsdl-org/SDL/issues/1059 and maybe to split btwn cores??)
 

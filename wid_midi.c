@@ -2,9 +2,9 @@
 #include "wid_graphics.h"
 #include "mbwmidi.h"
 
-// #include "stdio.h"
-// #define WMIDI_PRINTF printf
+#ifndef WMIDI_PRINTF
 #define WMIDI_PRINTF(...)
+#endif
 
 #include "midi_portmidi.h"
 #include "midi_libserialport.h"
