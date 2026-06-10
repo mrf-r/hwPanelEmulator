@@ -306,19 +306,17 @@ FRESULT f_sync(FIL* fp) {
     return FR_OK;
 }
 
-FRESULT f_truncate(FIL* fp) {
-    FF_PRINTF("ff: %s\n", __func__);
-    if (!fp || !fp->fp) {
-        return FR_INVALID_OBJECT;
-    }
-    
-    if (ftruncate(fileno(fp->fp), fp->fptr) != 0) {
-        return FR_DISK_ERR;
-    }
-    
-    fp->fsize = fp->fptr;
-    return FR_OK;
-}
+// FRESULT f_truncate(FIL* fp) {
+//     FF_PRINTF("ff: %s\n", __func__);
+//     if (!fp || !fp->fp) {
+//         return FR_INVALID_OBJECT;
+//     }
+//     if (truncate(fp->fname, fp->fptr) != 0) {
+//         return FR_DISK_ERR;
+//     }
+//     fp->fsize = fp->fptr;
+//     return FR_OK;
+// }
 
 /* Directory operations */
 FRESULT f_opendir(DIR_WRAPPER* dp, const char* path) {
