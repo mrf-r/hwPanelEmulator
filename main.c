@@ -185,17 +185,22 @@ __attribute__((weak)) void appCriticalLoop(uint32_t clock)
     (void) clock;
 }
 
+// kill timeout is used to avoid force killing during normal exit
+static int critical_kill_timer = 0;
 // for bspDelayMs() and other blocking app calls
 uint32_t panelCriticalLoop()
 {
     const uint32_t clock = SDL_GetTicks();
     widgetProcessAll(clock);
     appCriticalLoop(clock);
-    // if (SDL_FALSE == loop) {
-    //     // to kill user delay loop while exit was requested
-    //     // __asm volatile("ud2" ::: "memory");
-    //     __builtin_trap();
-    // }
+    if (SDL_FALSE == loop) {
+        // to kill user delay loop while exit was requested
+        critical_kill_timer++;
+        if (critical_kill_timer > 500) {
+            // __asm volatile("ud2" ::: "memory");
+            __builtin_trap();
+        }
+    }
     return clock;
 }
 
@@ -222,8 +227,8 @@ void bspDelayMs(const uint32_t time_ms)
     SDL_assert(loop);
     uint32_t time_now = bspGetMs();
     const uint32_t end = time_now + time_ms;
-    while (end < time_now) { time_now = panelCriticalLoop(); }
-    while (end > time_now) { time_now = panelCriticalLoop(); }
+    while (end < time_now) { time_now = panelCriticalLoop(); SDL_Delay(1); }
+    while (end > time_now) { time_now = panelCriticalLoop(); SDL_Delay(1); }
 }
 
 int main(int argc, char* argv[])
